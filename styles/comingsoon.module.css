@@ -1,0 +1,11 @@
+.bgimg {
+  text-align: center;
+  color: black;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 18px;
+  margin: 144px auto;
+  width: 50%;
+  border: 1px solid #babcbd94;
+  padding: 32px;
+  background-color: #d5d5d5b0;
+}

@@ -1,0 +1,84 @@
+.overlay {
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0a0a0a61;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.btn {
+  color: #5e2d86;
+  height: 168px;
+  padding: 12px 16px;
+  text-align: center;
+  width: 100%;
+  border: 1px solid #0000001c;
+  border-radius: 20px !important;
+  box-shadow: none;
+  font-weight: 600;
+  text-transform: initial;
+  background-color: #ebf4fc;
+}
+
+.popup {
+  padding: 20px;
+  background: #fff;
+  border-radius: 5px;
+  width: 50%;
+  position: relative;
+  left: 0;
+  right: 0;
+  margin: 153px auto;
+  max-width: 45%;
+}
+@media screen and (max-width: 599px) {
+  .popup {
+    max-width: 80%;
+  }
+}
+@media screen and (min-width: 600px) and (max-width: 736px) {
+  .popup {
+    left: 17%;
+  }
+}
+@media screen and (min-width: 737px) and (max-width: 1000px) {
+  .popup {
+    left: 11%;
+  }
+}
+
+.popup h2 {
+  margin-top: 0;
+  color: #333;
+  font-family: 'Inter Regular',sans-serif;
+}
+.popup .close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  transition: all 200ms;
+  font-size: 30px;
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+}
+.popup .close:hover {
+  cursor: pointer;
+  color: #000;
+}
+.popup .content {
+  max-height: 30%;
+}
+
+@media screen and (max-width: 700px) {
+  .popup {
+    width: 70%;
+  }
+}

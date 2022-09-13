@@ -1,0 +1,8 @@
+version: '3.3'
+
+services:
+  mww:
+    ports:
+      - 8080:3000
+    image: mww-ui
+    build: ./
