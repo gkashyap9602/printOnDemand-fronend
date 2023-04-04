@@ -41,7 +41,7 @@ module.exports = {
     ZENDESK_PASSWORD: process.env.ZENDESK_PASSWORD
   },
   images: {
-    domains: ['mwwtestingapi.fingent.net', 'mwwportalstoragedev.blob.core.windows.net'],
+    domains: ['', ''],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
   }
