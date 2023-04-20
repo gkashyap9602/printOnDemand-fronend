@@ -41,8 +41,11 @@ module.exports = {
     ZENDESK_PASSWORD: process.env.ZENDESK_PASSWORD
   },
   images: {
-    domains: ['', ''],
+    domains: ['mwwdevapi.fingent.net', 'mwwportalstoragedev.blob.core.windows.net'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
+  },
+  webpack(config, options) {
+    return config
   }
 }
