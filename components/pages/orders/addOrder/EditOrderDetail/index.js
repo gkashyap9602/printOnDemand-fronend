@@ -17,7 +17,7 @@ import { connect } from 'react-redux'
 import { updateAddresses, fetchShippingMethods } from 'redux/actions/orderActions'
 import CheckIcon from '@material-ui/icons/Check'
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked'
-import { checkIfEmpty } from 'utils/helpers'
+import { checkIfEmpty, checkifValidUrl, hasWhiteSpace } from 'utils/helpers'
 import Select from 'components/select/index'
 const useStyles = style
 
@@ -32,7 +32,8 @@ const EditOrderDetail = ({
   address,
   handleSubmit,
   orderDetail = {},
-  isProduction = false
+  isProduction = false,
+  isEuOrUk = false
 }) => {
   const classes = useStyles()
   const [value, setValue] = useState('test')
@@ -40,9 +41,21 @@ const EditOrderDetail = ({
   const [addresses, setaddresses] = useState({})
   const [editActive, setEditActive] = useState(false)
   const [shippingMethod, setShippingMethod] = useState()
+  const [shipping, setShipping] = useState()
   const [shippingMethodAccountNumber, setShippingMethodAccountNumber] = useState('')
   const [shippingOptions, setShippingOptions] = useState()
   const [toggleModal, setToggleModal] = useState(false)
+  const [ioss, setioss] = useState('')
+  const [receipt, setreceipt] = useState('')
+  const [preship, setpreship] = useState('')
+  const [error, seterror] = useState({})
+  const [customPreship, setcustomPreship] = useState(false)
+
+  useEffect(() => {
+    setreceipt(orderDetail?.receipt)
+    setpreship(orderDetail?.preship)
+    setioss(orderDetail?.ioss)
+  }, [orderDetail])
 
   /**
    * Handle change
@@ -71,6 +84,16 @@ const EditOrderDetail = ({
           (ele) => ele.label === orderDetail?.shippingMethodName
         )
         setShippingMethod(methodId?.value)
+        setShipping(methodId?.shipMethod)
+        if (
+          shippingOptions.find((option) => option.label === orderDetail?.shippingMethodName)
+            ?.label === 'PRESHIP'
+        ) {
+          setcustomPreship(true)
+        } else {
+          setcustomPreship(false)
+          setpreship(null)
+        }
       }
       updateAddresses({
         billingAddress: {
@@ -111,11 +134,16 @@ const EditOrderDetail = ({
           (method) =>
             (optionList = [
               ...optionList,
-              { value: method?.id, label: method?.name, shipMethod: method?.shipMethod }
+              {
+                id: method?.id,
+                value: method?.shipMethod,
+                label: method?.name,
+                shipMethod: method?.shipMethod
+              }
             ])
         )
         setShippingOptions(optionList)
-        setShippingMethod(optionList.find((option) => option.shipMethod === 'GS1')?.value)
+        setShippingMethod(optionList.find((option) => option.shipMethod === 'GS1')?.shipMethod)
       }
     }
   }, [])
@@ -147,14 +175,39 @@ const EditOrderDetail = ({
    * handleSubmitOrder
    */
   const handleSubmitOrder = () => {
+    const shippingMethodId = shippingOptions.find(
+      (option) => option.shipMethod === shippingMethod
+    )?.id
+
+    const shipMethod = shippingOptions.find(
+      (option) => option.shipMethod === shippingMethod
+    )?.shipMethod
     handleSubmit({
       orderType: value === 'test' ? 2 : 1,
-      shippingMethodId: shippingMethod,
-      shippingAccountNumber: shippingMethodAccountNumber
+      shippingMethodId: shippingMethodId,
+      shippingAccountNumber: shippingMethodAccountNumber,
+      shippingMethodId: shippingMethodId,
+      shipMethod: shipMethod,
+      ioss: isEuOrUk ? ioss : null,
+      receipt: receipt,
+      preship: preship,
+      isPreship:
+        shippingOptions.find((option) => option.shipMethod === shippingMethod)?.label === 'PRESHIP'
     })
-    setShippingMethodAccountNumber('')
+    // setShippingMethodAccountNumber('')
   }
 
+  useEffect(() => {
+    !checkifValidUrl(receipt) && !checkIfEmpty(receipt)
+      ? seterror({ ...error, receipt: 'Invalid url' })
+      : seterror({ ...error, receipt: hasWhiteSpace(receipt) ? 'Invalid url' : null })
+  }, [receipt])
+
+  useEffect(() => {
+    !checkifValidUrl(preship) && !checkIfEmpty(preship)
+      ? seterror({ ...error, preship: 'Invalid url' })
+      : seterror({ ...error, preship: hasWhiteSpace(preship) ? 'Invalid url' : null })
+  }, [preship])
   // modal popup
   return (
     <div className={classes.billingRow}>
@@ -256,6 +309,23 @@ const EditOrderDetail = ({
           )}
         </div>
       </div>
+      <Typography variant='body1' className={classes.labelForm}>
+        IOSS
+      </Typography>
+      <TextField
+        onChange={(e) => setioss(e?.target?.value)}
+        name='ioss'
+        type='text'
+        disabled={!isEuOrUk}
+        value={ioss}
+        placeholder='Enter IOSS '
+        variant='outlined'
+        style={{ marginTop: '10px', marginBottom: 10 }}
+        fullWidth
+        InputLabelProps={{
+          shrink: false
+        }}
+      />
       {!isProduction && (
         <>
           <div className={classes.shippingForm_Field}>
@@ -267,23 +337,35 @@ const EditOrderDetail = ({
               onChange={(e) => {
                 setShippingMethodAccountNumber('')
                 setShippingMethod(e.target.value)
+                if (
+                  shippingOptions.find((option) => option.shipMethod === e.target.value)?.label ===
+                  'PRESHIP'
+                ) {
+                  setcustomPreship(true)
+                } else {
+                  setcustomPreship(false)
+                  setpreship(null)
+                }
               }}
             />
-            {shippingMethod !== 1 && shippingMethod !== undefined && (
-              <TextField
-                variant='outlined'
-                type={'text'}
-                onChange={(e) => setShippingMethodAccountNumber(e.target.value)}
-                placeholder='Shipping account number'
-                value={shippingMethodAccountNumber}
-                style={{ marginTop: '10px' }}
-                fullWidth
-                InputLabelProps={{
-                  shrink: false
-                }}
-              />
-            )}
+            {shippingMethod !== 'GS1' &&
+              shippingMethod !== undefined &&
+              shippingMethod !== 'PRESHIP' && (
+                <TextField
+                  variant='outlined'
+                  type={'text'}
+                  onChange={(e) => setShippingMethodAccountNumber(e.target.value)}
+                  placeholder='Shipping account number'
+                  value={shippingMethodAccountNumber}
+                  style={{ marginTop: '10px' }}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: false
+                  }}
+                />
+              )}
           </div>
+
           <div className={classes.btnGrup_Radio}>
             <RadioGroup aria-label='order' name='order1' value={value} onChange={handleChange}>
               <FormControlLabel
@@ -298,12 +380,64 @@ const EditOrderDetail = ({
               />
             </RadioGroup>
           </div>
-          <div className={classes.btnPlaceOrder}>
-            <Button type='submit' variant='contained' fullWidth onClick={() => handleSubmitOrder()}>
-              Update order
-            </Button>
-          </div>
         </>
+      )}
+      <div style={{ marginBottom: 10 }}>
+        <Typography variant='body1' className={classes.labelForm}>
+          Custom packing slips
+        </Typography>
+        <TextField
+          onChange={(e) => setreceipt(e?.target?.value)}
+          name='receipt'
+          disabled={orderDetail?.status !== 1}
+          type='text'
+          helperText={error?.receipt}
+          error={error?.receipt}
+          value={receipt}
+          placeholder='Enter url '
+          variant='outlined'
+          style={{ marginTop: '10px' }}
+          fullWidth
+          InputLabelProps={{
+            shrink: false
+          }}
+        />
+      </div>
+      {customPreship && (
+        <div style={{ marginBottom: 10 }}>
+          <Typography variant='body1' className={classes.labelForm}>
+            Custom preship labels
+          </Typography>
+          <TextField
+            onChange={(e) => setpreship(e?.target?.value)}
+            name='preship'
+            type='text'
+            value={preship}
+            disabled={orderDetail?.status !== 1}
+            error={error?.preship}
+            helperText={error?.preship}
+            placeholder='Enter url '
+            variant='outlined'
+            style={{ marginTop: '10px' }}
+            fullWidth
+            InputLabelProps={{
+              shrink: false
+            }}
+          />
+        </div>
+      )}
+      {!isProduction && (
+        <div className={classes.btnPlaceOrder}>
+          <Button
+            disabled={error?.preship || error?.receipt}
+            type='submit'
+            variant='contained'
+            fullWidth
+            onClick={() => handleSubmitOrder()}
+          >
+            Update order
+          </Button>
+        </div>
       )}
 
       {/* <!--modal--> */}

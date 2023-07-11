@@ -51,11 +51,12 @@ function Faq({
   const [toggleFilter, setToggleFilter] = useState(false)
   const [articleData, setarticleData] = useState([])
   useEffect(() => {
-    !checkIfEmpty(articles) &&
-      setarticleData([
-        ...articles?.filter((a) => a?.promoted),
-        ...articles?.filter((a) => !a?.draft && !a.promoted)
-      ])
+    !checkIfEmpty(articles)
+      ? setarticleData([
+          ...articles?.filter((a) => a?.promoted),
+          ...articles?.filter((a) => !a?.draft && !a.promoted)
+        ])
+      : setarticleData([])
   }, [articles])
 
   useEffect(async () => {
@@ -240,7 +241,7 @@ function Faq({
               startIcon={<Icon icon='filter-list' size={18} />}
               style={{ width: 145, background: '#fff', zIndex: 1 }}
             >
-              Filter
+              Categories
             </Button>
             <ToggleDrawer
               open={toggleFilter}
@@ -272,7 +273,7 @@ function Faq({
               />
             </Grid>
             <Grid item xs={12} sm={12} md={8} lg={8} xl={9}>
-              <FaqAccordion search={search} articles={articleData} />
+              <FaqAccordion search={search} articles={articleData} count={articleCount?.count} />
             </Grid>
           </Grid>
           <div className={classes.tabPagination}>
@@ -340,7 +341,7 @@ function Faq({
 const mapStateToProps = (state) => ({
   category: state?.faq?.faq?.categories,
   articles: state?.faq?.articles?.articles || state?.faq?.articles?.results,
-  articleCount: state?.faq?.articles || state?.faq?.articles,
+  articleCount: state?.faq?.articles,
   userAccountDetails: state.user.userAccountDetails?.response
 })
 

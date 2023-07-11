@@ -214,7 +214,7 @@ export const registerCanvasEvents = ({
       return
     }
     selectedObject = object.target
-    if (selectedObject && outlineForSvg.length === 0) {
+    if (selectedObject && outlineForSvg.length === 0 && !selectedObject.indicator) {
       outlineForSvg = drawOutlineForSVG(canvas, design.fabricViewSelected)
     }
     outlineForSvg.forEach((child) => {
@@ -277,7 +277,7 @@ export const registerCanvasEvents = ({
           updateGreyScalePolygon(canvas)
         }
 
-      } else {
+      } else if(!selectedObject.indicator){
         const selectedView = canvas._objects.find((item) => {
           return item.name === design?.fabricViewSelected
         })
@@ -306,7 +306,7 @@ export const registerCanvasEvents = ({
 
   canvas.on('mouse:move', () => {
     if (selectedObject) {
-      if (!selectedObject.clippingRetangle) {
+      if (!selectedObject.clippingRetangle && !selectedObject.indicator) {
         outlineForSvg.forEach((child) => {
           child.visible = true
         })

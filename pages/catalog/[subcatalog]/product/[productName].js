@@ -116,8 +116,11 @@ const ProductDetail = ({ getProductDetail, getAllCategory, product, categories }
                 <Typography
                   variant='p'
                   style={{ color: '#4c5156', cursor: 'pointer', textDecoration: 'underline' }}
-                  onClick={route.back}
+                  onClick={() =>
+                    route.push(`/catalog/GlobalSearch?search=${route?.query?.isGlobalSearch}`)
+                  }
                 >
+                  {/* {JSON.stringify(route?.query?.isGlobalSearch)} */}
                   Back to previous page
                 </Typography>
               )}

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   TableBody,
   TableRow,
@@ -30,12 +30,13 @@ const TableBodyList = ({
   removeTemplate = () => {}
 }) => {
   const classes = style()
-  let fileUploadedRow = {}
   const [symbolsArr] = useState(['e', 'E', '+', '-'])
+  const [fileUploadedRow, setFileUploadedRow] = useState()
+  const [upDatedDrop, setUpdatedDrop] = useState(null)
 
-  const onDrop = useCallback(
-    (acceptedFiles) => {
-      acceptedFiles.forEach((file) => {
+  useEffect(() => {
+    if (upDatedDrop) {
+      upDatedDrop?.forEach((file) => {
         if (
           file?.type === 'application/pdf' ||
           file?.type === 'application/postscript' ||
@@ -45,7 +46,7 @@ const TableBodyList = ({
             (item) => item.type === 'UPLOADER'
           )
           if (
-            !existingTemplates[0].templateFiles?.some(
+            !existingTemplates[0]?.templateFiles?.some(
               (template) =>
                 template.templateFormat === file?.type ||
                 (file.type === '' && template.templateFormat === 'application/psd')
@@ -78,10 +79,14 @@ const TableBodyList = ({
         } else {
           NotificationManager.warning('Unsupported file format', '', 2000)
         }
+        setUpdatedDrop(null)
       })
-    },
-    [fileUploadedRow]
-  )
+    }
+  }, [upDatedDrop])
+
+  const onDrop = useCallback((acceptedFiles) => {
+    setUpdatedDrop(acceptedFiles)
+  }, [])
 
   const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -164,7 +169,7 @@ const TableBodyList = ({
                                   {...getRootProps({
                                     className: 'dropzone',
                                     onClick: (e) => {
-                                      fileUploadedRow = tableData
+                                      setFileUploadedRow(tableData)
                                     }
                                   })}
                                   aria-label='add'

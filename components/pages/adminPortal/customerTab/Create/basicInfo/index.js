@@ -12,7 +12,7 @@ const useStyles = style
  * @param {*} param0
  * @returns
  */
-function BasicInfo({ handleChange, errors, data, changeFieldValue }) {
+function BasicInfo({ handleChange, errors, data, changeFieldValue, isDisabled = false }) {
   const classes = useStyles()
   /**
    * Set data options in the required format
@@ -32,6 +32,7 @@ function BasicInfo({ handleChange, errors, data, changeFieldValue }) {
                 <Field
                   {...field}
                   component={TextInput}
+                  isDisabled={isDisabled && field?.name === 'email'}
                   onChange={(value) => handleChange(field?.name, value)}
                   helperText={errors?.[field?.name]}
                 />

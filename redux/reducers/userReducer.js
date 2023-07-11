@@ -10,6 +10,8 @@ const userReducer = (state = intialState, action) => {
   switch (action.type) {
     case USER.GET_ACCOUNT_DETAILS:
       return { ...state, userAccountDetails: action.payload }
+    case USER.GET_STATUS:
+      return { ...state, userStatus: action.payload }
     case USER.SEND_BASIC_INFO:
       return { ...state, user: action.payload }
     case USER.SEND_SHIPPING_INFO:

@@ -15,7 +15,61 @@ export const style = makeStyles((theme) => ({
       flexWrap: 'wrap'
     }
   },
-
+  bgCheck_Box: {
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+    '& .MuiFormControlLabel-root': {
+      marginLeft: '0px!important',
+      '& .MuiTypography-root': {
+        color: '#292d2f',
+        fontSize: 14,
+        fontWeight: '400',
+        lineHeight: '22px'
+      },
+      '& .MuiIconButton-root': {
+        '&:hover': {
+          background: '#fff'
+        },
+        '&:focus': {
+          background: '#3374b6'
+        }
+      },
+      '& .MuiCheckbox-root': {
+        color: '#CACED7',
+        width: 23,
+        height: 23,
+        marginRight: 10
+      },
+      '& .MuiCheckbox-colorSecondary.Mui-checked': {
+        color: '#ccc',
+        background: '#3374b6',
+        width: 23,
+        height: 23,
+        borderRadius: 13,
+        '&:hover': {
+          background: '#3374b6'
+        },
+        '& .MuiIconButton-label': {
+          border: 'unset'
+        },
+        '& .MuiSvgIcon-root': {
+          fill: '#fff',
+          padding: 3
+        }
+      },
+      '& .MuiIconButton-label': {
+        fontSize: 24,
+        border: '2px solid #d4d4d4',
+        width: 23,
+        height: 23,
+        borderRadius: 13,
+        '& .MuiSvgIcon-root': {
+          fill: 'transparent',
+          padding: 3
+        }
+      }
+    }
+  },
   bgProductList: {
     width: '75%',
     [theme.breakpoints.down('sm')]: {
@@ -53,7 +107,6 @@ export const style = makeStyles((theme) => ({
     [theme.breakpoints.between('xs', 'sm')]: {
       width: '40%'
     },
-
     '@media screen and (max-width:1199px)': {
       display: 'none'
     }
@@ -65,9 +118,7 @@ export const style = makeStyles((theme) => ({
     '@media screen and (min-width:600px) and (max-width:739px)': {
       marginTop: 20
     },
-    display: 'flex',
     alignItems: 'baseline',
-    width: '100%',
     flexWrap: 'wrap'
   },
   hiddenOnlyXs: {
@@ -77,7 +128,21 @@ export const style = makeStyles((theme) => ({
     '@media screen and (max-width:360px)': {
       marginTop: 10
     },
-    marginRight: theme.spacing(1)
+    marginRight: theme.spacing(1),
+    alignSelf: 'flex-start!important',
+    marginTop: theme.spacing(2),
+    marginLeft: '44px',
+    '@media screen and (max-width:699px)': {
+      marginLeft: '0px!important'
+    }
+  },
+  float_Filter: {
+    '@media screen and (max-width:699px)': {
+      float: 'left!important'
+    },
+    '@media screen and (max-width:360px)': {
+      marginRight: 10
+    }
   },
   crumbMbTop: {
     marginTop: 2
@@ -86,7 +151,6 @@ export const style = makeStyles((theme) => ({
     justifyContent: 'flex-end',
     display: 'flex',
     flexWrap: 'wrap',
-    width: '73%',
     alignItems: 'center',
     '@media screen and (max-width:1260px)': {
       width: '100%'
@@ -96,11 +160,13 @@ export const style = makeStyles((theme) => ({
     },
     '@media screen and (max-width:360px)': {
       display: 'block'
+    },
+    '@media screen and (max-width:699px)': {
+      justifyContent: 'flex-start'
     }
   },
   recentSelect: {
     marginRight: theme.spacing(1),
-
     alignSelf: 'baseline',
     '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
       borderColor: '#e1e1e1'
@@ -111,24 +177,21 @@ export const style = makeStyles((theme) => ({
       fontWeight: 400
     },
     '@media screen and (max-width:360px)': {
-      marginBottom: '10px'
+      marginBottom: '10px',
+      marginTop: 23
     }
   },
-
   libraryChecked: {
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(2),
-
     '& .MuiFormControlLabel-root': {
       marginLeft: '0px!important',
-
       '& .MuiTypography-root': {
         color: '#292d2f',
         fontSize: 14,
         fontWeight: '400',
         lineHeight: '22px'
       },
-
       '& .MuiIconButton-root': {
         '&:focus': {
           background: '#3374b6'
@@ -140,7 +203,6 @@ export const style = makeStyles((theme) => ({
         height: 23,
         marginRight: 10
       },
-
       '& .MuiCheckbox-colorSecondary.Mui-checked': {
         color: '#ccc',
         background: '#3374b6',
@@ -153,21 +215,17 @@ export const style = makeStyles((theme) => ({
         '& .MuiIconButton-label': {
           border: 'unset'
         },
-
         '& .MuiSvgIcon-root': {
           fill: '#fff',
           padding: 3
         }
       },
-
       '& .MuiIconButton-label': {
         fontSize: 24,
-
         border: '2px solid #d4d4d4',
         width: 23,
         height: 23,
         borderRadius: 13,
-
         '& .MuiSvgIcon-root': {
           padding: 3,
           fill: 'transparent'
@@ -175,7 +233,6 @@ export const style = makeStyles((theme) => ({
       }
     }
   },
-
   btnAddStore: {
     marginRight: theme.spacing(1),
     color: '#303337',
@@ -191,7 +248,6 @@ export const style = makeStyles((theme) => ({
       fontFamily: 'Inter Regular'
     }
   },
-
   deleteModal: {
     display: 'flex',
     alignItems: 'center',
@@ -233,7 +289,6 @@ export const style = makeStyles((theme) => ({
       backgroundColor: '#e14240'
     }
   },
-
   Filter_Width: {
     '& .MuiDrawer-paper': {
       [theme.breakpoints.down('xs')]: {
@@ -241,7 +296,6 @@ export const style = makeStyles((theme) => ({
       }
     }
   },
-
   storeList_Pop: {
     '& .MuiDialogContent-root': {
       overflow: 'visible'
@@ -270,12 +324,28 @@ export const style = makeStyles((theme) => ({
   store_Root: {
     marginTop: theme.spacing(4)
   },
-
   hiddenMdRoot: {
     '@media screen and (min-width:700px) and (max-width:1199px)': {
       display: 'flex',
       alignItems: 'end'
     },
     display: 'contents'
+  },
+  multipleAddStoreBtn: {
+    marginLeft: theme.spacing(1),
+    '@media screen and (min-width:470px) and (max-width:583px)': {
+      marginLeft: '0px!important'
+    }
+  },
+  btn_Store: {
+    marginLeft: '8px',
+    textTransform: 'initial',
+    '& .MuiButton-endIcon': {
+      margin: '0px'
+    },
+    '@media screen and (max-width:469px)': {
+      marginTop: theme.spacing(1),
+      marginLeft: '0px!important'
+    }
   }
 }))

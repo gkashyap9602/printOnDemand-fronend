@@ -104,11 +104,11 @@ const Profile = ({
       )
     }
 
-    return () => {
-      if (!shopifyAuth) {
-        updateField('userAccountDetails', null)
-      }
-    }
+    // return () => {
+    //   if (!shopifyAuth) {
+    //     updateField('userAccountDetails', null)
+    //   }
+    // }
   }, [userAccountDetails, updateField])
 
   /**
@@ -117,9 +117,9 @@ const Profile = ({
   useEffect(() => {
     updateField('wizardIndex', 0)
     return () => {
-      if (!shopifyAuth) {
-        updateField('userAccountDetails', null)
-      }
+      // if (!shopifyAuth) {
+      //   updateField('userAccountDetails', null)
+      // }
       updateField('wizardIndex', 0)
     }
   }, [])

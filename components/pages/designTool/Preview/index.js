@@ -63,6 +63,12 @@ const Preview = React.forwardRef((props, ref) => {
       if (showPreview === true) {
         setShowPreview(!showPreview)
         setShowPreviewLoader(false)
+        if (canvasRef.current) {
+          canvasRef.current._objects.find(
+            (item) => item.name === design.fabricViewSelected + 'safeZone'
+          ).visible = true
+          canvasRef.current.renderAll()
+        }
         // if (
         //   designerJSON.mockupModel &&
         //   designerJSON.cameraViewPositions &&
@@ -81,17 +87,19 @@ const Preview = React.forwardRef((props, ref) => {
   const handleClosePreview = () => {
     setShowPreview(!showPreview)
     setShowPreviewLoader(false)
-    if (
-      designerJSON.mockupModel &&
-      designerJSON.cameraViewPositions &&
-      designerJSON.cameraTargetViewPositions
-    ) {
-      sceneRef.current.removePreviewModel(
-        canvasRef.current,
-        design.fabricViewSelected,
-        designerJSON
-      )
-    }
+
+    // TODO: This is for generating mockups with human models in them
+    // if (
+    //   designerJSON.mockupModel &&
+    //   designerJSON.cameraViewPositions &&
+    //   designerJSON.cameraTargetViewPositions
+    // ) {
+    //   sceneRef.current.removePreviewModel(
+    //     canvasRef.current,
+    //     design.fabricViewSelected,
+    //     designerJSON
+    //   )
+    // }
   }
   return (
     <>

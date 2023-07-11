@@ -14,6 +14,17 @@ export const getAccontDetails = (guid) => {
   return fetchHandler(fetchOptions)
 }
 
+export const getStatusApi = (guid) => {
+  const fetchOptions = {
+    url: `api/User/GetUserStatus/${guid}`,
+    method: 'GET',
+    actionType: USER.GET_STATUS,
+    secure: true
+  }
+
+  return fetchHandler(fetchOptions)
+}
+
 export const updateBasicInfo = (data) => {
   const fetchOptions = {
     url: `api/Customer/UpdateBasicDetails`,

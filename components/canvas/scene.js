@@ -5,7 +5,7 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { svgModelConstants } from 'constants/svgModelConstants'
 export default class LoadScene {
-  constructor(fabricCanvas, showLoader) {
+  constructor(fabricCanvas, showLoader, linearProgressRef) {
     this.textures = {
       cotton: 'Images/Textures/linen_normal.png'
 
@@ -71,10 +71,26 @@ export default class LoadScene {
     const canvas = document.getElementById('2DCanvas')
     this.canvasTexture = new THREE.CanvasTexture(canvas)
     this.canvasTexture.repeat.set(1, 1)
+    this.progressValue = 0;
+    this.loadingManager = new THREE.LoadingManager()
 
+    this.loadingManager.onStart = (url, loaded, total) => {
+
+      this.progressValue = 0;
+      linearProgressRef?.current?.setProgress(0)
+    }
+
+    this.loadingManager.onProgress = (url, loaded, total) => {
+      this.progressValue = loaded / total * 100;
+      linearProgressRef?.current?.setProgress(loaded / total * 100)
+    }
+    this.loadingManager.onLoad = () => {
+      this.progressValue = 100;
+      linearProgressRef?.current?.setProgress(100)
+    }
     animate()
     function animate() {
- 
+
 
       scope.id = requestAnimationFrame(animate)
 
@@ -84,12 +100,15 @@ export default class LoadScene {
 
   preloadModel(modelPath, lightAdded, callBack, mode) {
     const svgKeys = Object.keys(this.svgModels.types)
-    const fbxLoader = new FBXLoader()
+    const fbxLoader = new FBXLoader(this.loadingManager)
     fbxLoader.load(
       modelPath,
       (model) => {
         model.scale.set(0.005, 0.005, 0.005)
         model.position.set(0, 0, 0)
+        if (this.svgModels.backFacing) {
+          model.rotation.y = Math.PI
+        }
         if (this.svgModels?.unlockRotation) {
           this.controls.maxPolarAngle = Math.PI
           this.controls.minPolarAngle = 0
@@ -165,6 +184,15 @@ export default class LoadScene {
               child.material.needsUpdate = true
               child.material.bumpScale = 0.001
             }
+            //Print File Bug Fix
+            if (!svgKeys.includes(child.name) && this.svgModels.meshColor) {
+              if(this.svgModels.meshColor.includes("0x")){
+                child.material.color = new THREE.Color(this.svgModels.meshColor?.replace('0x', '#'))
+              }else{
+                child.material.color = new THREE.Color(this.svgModels.meshColor)
+              } 
+            }
+            //Print File Bug Fix
             child.material.side = THREE.DoubleSide
           }
         })
@@ -175,13 +203,14 @@ export default class LoadScene {
         this.mapMaterial()
         model.updateMatrixWorld()
         this.renderer.render(this.scene, this.camera)
-   
+
         this.fabricCanvas.renderAll()
-        if (mode === 'edit' || mode === 'duplicate' || this.svgModels.transparentPrint) {
-          callBack('3DModel')
-        } else {
-          this.showLoader(false)
-        }
+        // if (mode === 'edit' || mode === 'duplicate' || this.svgModels.transparentPrint) {
+        //   callBack('3DModel')
+        // } else {
+        //   //this.showLoader(false)
+        // }
+        callBack('3DModel')
         this.registerMouseListeners()
       },
       (progress) => { },
@@ -203,6 +232,9 @@ export default class LoadScene {
       )
       rayCaster.setFromCamera(cursorPosition, this.camera)
       let intersects = []
+      if(!this.model){
+        return
+      }
       intersects = rayCaster.intersectObjects([this.model], true)
       if (intersects?.length === 0) {
         this.fabricCanvas.discardActiveObject()
@@ -221,8 +253,11 @@ export default class LoadScene {
   }
 
   preLoadTextures(initialModel, modelName, designerJSON, callBack, mode, baseURL) {
+
+    // this.textures["3DThumbnail"] = baseURL + designerJSON.types[designerJSON.default].replace('Images', '/Images/Thumbnail')
+    //   .replace('svg', 'png')
     this.baseURL = baseURL
-    this.showLoader(true)
+    //this.showLoader(true)
     const textureLoader = new THREE.TextureLoader()
     this.texturePromises = []
     this.loadedTextures = []
@@ -249,7 +284,7 @@ export default class LoadScene {
     this.renderer.render(this.scene, this.camera)
   }
   mapMaterial() {
-   
+
     this.canvasTexture.wrapS = THREE.RepeatWrapping
     this.canvasTexture.wrapT = THREE.RepeatWrapping
 
@@ -305,7 +340,7 @@ export default class LoadScene {
       this.canvasTexture.wrapS = THREE.RepeatWrapping
       this.canvasTexture.wrapT = THREE.RepeatWrapping
 
- 
+
       mockupModel.traverse((child) => {
         child.visible = true
         if (Object.keys(this.svgModels.types).includes(child.name)) {
@@ -329,7 +364,7 @@ export default class LoadScene {
           if (child instanceof THREE.Mesh) {
 
             child.material.alphaMap = null
-  
+
             child.material.needsUpdate = true
 
           }
@@ -338,15 +373,15 @@ export default class LoadScene {
       this.renderer.render(this.scene, this.camera)
 
       THREE.DefaultLoadingManager.onLoad = () => {
-         if (this.mockupModel && this.mockupGenerationStarted) {
+        if (this.mockupModel && this.mockupGenerationStarted) {
           this.mockupGenerationStarted = false
           callBack()
-        
+
         }
 
 
       };
-   
+
     })
   }
 

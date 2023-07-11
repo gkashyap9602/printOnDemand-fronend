@@ -51,15 +51,14 @@ const AdminCustomer = ({
   const [apiKey, setApiKey] = useState()
   const [customerStatusData, setCustomerStatusData] = useState()
   const [deleteLoader, setDeleteLoader] = useState(false)
-
   useEffect(() => {
     setTableTitles(TABLE_TITLES['CUSTOMER_LIST_TABLE_TITLE'])
-    fetchCustomerList({
-      ...adminParam,
-      sortColumn: 'createdOn',
-      sortDirection: 'desc',
-      pageIndex: 0
-    })
+    // fetchCustomerList({
+    //   ...adminParam,
+    //   sortColumn: 'createdOn',
+    //   sortDirection: 'desc',
+    //   pageIndex: 0
+    // })
     updateQuery({
       ...adminParam,
       sortColumn: 'createdOn',
@@ -68,23 +67,29 @@ const AdminCustomer = ({
     })
   }, [])
 
-  useEffect(async () => {
+  // useEffect(async () => {
+
+  const handleAllFilterChange = async (param) => {
     let res
     const isSearchUpdated =
-      adminParam?.searchKey &&
+      param?.searchKey &&
       previousAdminParam?.searchKey &&
-      Object.entries(adminParam.searchKey).sort().toString() ===
+      Object.entries(param.searchKey).sort().toString() ===
         Object.entries(previousAdminParam.searchKey).sort().toString()
     if (isSearchUpdated) {
       updateField('tableLoader', true)
       const delayDebounceFn = setTimeout(async () => {
-        res = await fetchCustomerList(adminParam)
+        res = await fetchCustomerList({
+          ...param
+        })
       }, 1000)
 
       return () => clearTimeout(delayDebounceFn)
     } else {
       updateField('tableLoader', true)
-      res = await fetchCustomerList(adminParam)
+      res = await fetchCustomerList({
+        ...param
+      })
     }
     if (
       (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res.hasError) &&
@@ -100,7 +105,9 @@ const AdminCustomer = ({
       updateField('tableLoader', false)
       updateField('customerList', [])
     }
-  }, [adminParam])
+  }
+
+  // }, [adminParam])
 
   useEffect(() => {
     if (customerList?.statusCode >= 200 && customerList.statusCode <= 300) {
@@ -122,6 +129,7 @@ const AdminCustomer = ({
    */
   const handlePageSizeChange = (e) => {
     updateQuery({ ...adminParam, pageSize: e, pageIndex: 0 })
+    handleAllFilterChange({ ...adminParam, pageSize: e, pageIndex: 0 })
   }
 
   /**
@@ -130,6 +138,7 @@ const AdminCustomer = ({
    */
   const handlePageNation = (page) => {
     updateQuery({ ...adminParam, pageIndex: page - 1 })
+    handleAllFilterChange({ ...adminParam, pageIndex: page - 1 })
   }
 
   /**
@@ -139,10 +148,17 @@ const AdminCustomer = ({
   const serachHandler = (e) => {
     if (e.target.value) {
       updateQuery({ ...adminParam, pageIndex: 0, searchKey: e.target.value })
+      handleAllFilterChange({ ...adminParam, pageIndex: 0, searchKey: e.target.value })
     } else {
       const keyRemovedParam = { ...adminParam }
       delete keyRemovedParam.searchKey
       updateQuery({ ...keyRemovedParam, pageIndex: 0 })
+      handleAllFilterChange({
+        ...keyRemovedParam,
+        pageIndex: 0,
+        sortColumn: 'createdOn',
+        sortDirection: 'desc'
+      })
     }
   }
 
@@ -150,22 +166,29 @@ const AdminCustomer = ({
    * Handle table sort
    * @param {*} titleObj
    */
-  const sortFunction = (titleObj) => {
+  const sortFunction = (titleObj, key) => {
+    console.log(titleObj)
     const newTitleObj = tableTitles.map((obj) => {
-      if (obj.id === titleObj.id || obj.isAscending) {
+      if (obj.id === titleObj.id) {
         return {
           ...obj,
-          isAscending: !obj.isAscending
+          isAscending: key
         }
       }
-      return obj
+      return { ...obj, isAscending: false }
     })
     setTableTitles(newTitleObj)
     setIsSort(titleObj.id)
     updateQuery({
       ...adminParam,
       sortColumn: titleObj.sortName,
-      sortDirection: titleObj.isAscending ? 'desc' : 'asc',
+      sortDirection: key,
+      pageIndex: 0
+    })
+    handleAllFilterChange({
+      ...adminParam,
+      sortColumn: titleObj.sortName,
+      sortDirection: key,
       pageIndex: 0
     })
   }
@@ -220,6 +243,7 @@ const AdminCustomer = ({
    * Update global states=> customerList and adminParam
    */
   useEffect(() => {
+    handleAllFilterChange(adminParam)
     return () => {
       updateField('customerList', [])
       updateField('adminParam', {
@@ -299,12 +323,18 @@ const AdminCustomer = ({
     }
   }
 
+  const rerenderPage = async (link) => {
+    if (navigator?.onLine) {
+      if (link === '/admin/customerList') route.reload()
+    }
+  }
+
   return (
-    <Layout activateHide>
+    <Layout activateHide handleOnClick={rerenderPage}>
       {(loader || deleteLoader) && <Loader />}
       <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
         {/* <!--active tabs--> */}
-        <CustomerTab />
+        <CustomerTab handleAllFilterChange={handleAllFilterChange} />
         {/* <!--active tabs--> */}
         <div className={classes.bgTab_Info}>
           <div className={classes.tabFlex}>
@@ -337,6 +367,7 @@ const AdminCustomer = ({
           <div className={classes.tableWrapper}>
             <DataTable
               sortFunction={sortFunction}
+              isAscDescSort={true}
               tableTitles={tableTitles}
               lists={lists}
               statusChanger={statusChanger}

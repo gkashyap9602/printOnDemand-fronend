@@ -54,6 +54,7 @@ const style = makeStyles((theme) => ({
   },
   hiddenOnlyXs: {
     alignSelf: 'end',
+
     '@media screen and (min-width:1200px)': {
       display: 'none'
     },

@@ -4,8 +4,12 @@ const intialState = {
   token: null,
   tableLoader: false,
   adminParam: {
+    sortColumn: 'createdOn',
+    sortDirection: 'desc',
     pageIndex: 0,
-    pageSize: 10
+    pageSize: 10,
+    sortColumn: 'createdOn',
+    sortDirection: 'desc'
   }
 }
 

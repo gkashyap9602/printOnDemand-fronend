@@ -5,6 +5,8 @@ import Icon from 'icomoons/Icon'
 import ShippingForm from './shippingForm'
 import style from './style'
 import BillingForm from './billingForm'
+import { connect } from 'react-redux'
+import { getCountryList, getStateList } from 'redux/actions/userActions'
 const useStyles = style
 /**
  * TabPanel
@@ -54,7 +56,9 @@ const EditAddress = ({
   billingAddressUser = {},
   orderDetail = {},
   isEdit = false,
-  editActive
+  editActive,
+  getCountryList,
+  getStateList
 }) => {
   const classes = useStyles()
   const [value, setValue] = React.useState(0)
@@ -73,6 +77,8 @@ const EditAddress = ({
    */
   useEffect(() => {
     setValue(0)
+    getCountryList()
+    getStateList('US')
   }, [])
 
   // tabs
@@ -128,4 +134,9 @@ const EditAddress = ({
   )
 }
 
-export default EditAddress
+const mapDispatchToProps = {
+  getStateList,
+  getCountryList
+}
+
+export default connect(() => {}, mapDispatchToProps)(EditAddress)

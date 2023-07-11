@@ -217,7 +217,8 @@ export const style = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    borderTop: '1px solid #ececec'
+    borderTop: '1px solid #ececec',
+    zIndex: 1
   },
   workspaceArea: {
     flexGrow: 1
@@ -254,5 +255,13 @@ export const style = makeStyles((theme) => ({
     '@media screen and (min-width:960px) and (max-width:1165px)': {
       marginTop: 40
     }
+  },
+  canvasBar: {
+    position: 'absolute',
+    top: '45%',
+    zIndex: 1,
+    width: '77%',
+    maxWidth: '77%',
+    left: '10%'
   }
 }))

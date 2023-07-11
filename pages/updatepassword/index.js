@@ -52,15 +52,13 @@ let CreatePassword = ({
    * After success
    */
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isSuccess && !loaderBtn) {
-        isShopifyApp() && localStorage.removeItem('userSession')
-        signoutHandler()
-        updateField('userDetails', {})
-        router.push('/login')
-      }
-    }, 1000)
-    return () => clearTimeout(timer)
+    if (isSuccess && !loaderBtn) {
+      signoutHandler()
+      !isShopifyApp() && localStorage.removeItem('userSession')
+      updateField('userDetails', null)
+      updateField('userSessionShopify', null)
+      router.push('/login')
+    }
   }, [isSuccess, loaderBtn])
 
   /**

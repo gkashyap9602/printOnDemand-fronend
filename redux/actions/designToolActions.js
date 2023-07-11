@@ -267,3 +267,38 @@ export const setCropStatus = (status) => {
     payload: status
   }
 }
+// initial call to get the image url
+export const getUploadImageURL = (data) => {
+  const fetchOptions = {
+    url: 'api/ProductLibrary/GetDesignImageUrl',
+    method: 'POST',
+    // actionType: DESIGNTOOL.SAVE_PRODUCT,
+    body: JSON.stringify(data),
+    secure: true,
+    shouldDispatch: false
+  }
+  console.log(data)
+  return fetchHandler(fetchOptions)
+}
+export const uploadToImageURL = (url, data) => {
+  const fetchOptions = {
+    url,
+    method: 'PUT',
+    'x-ms-blob-type': 'BlockBlob',
+    'Content-Type': 'image/png',
+    body: data
+  }
+  return fetchHandler(fetchOptions)
+}
+// second call to save the actual image
+export const saveDesignImage = (data) => {
+  const fetchOptions = {
+    url: 'api/ProductLibrary/SaveDesignImage',
+    method: 'POST',
+    // actionType: DESIGNTOOL.SAVE_PRODUCT,
+    body: JSON.stringify(data),
+    secure: true,
+    shouldDispatch: false
+  }
+  return fetchHandler(fetchOptions)
+}

@@ -22,7 +22,9 @@ const DataTable = ({
   isSort,
   className,
   isProductDetail = false,
-  collapse = false
+  PageId = '',
+  collapse = false,
+  isAscDescSort = false
 }) => {
   const classes = useStyles()
   return (
@@ -38,9 +40,11 @@ const DataTable = ({
             checkBoxHandler={selectAllField}
             isCheck={isCheck}
             isProductDetail={isProductDetail}
+            PageId={PageId}
             lists={lists}
             options={options}
             isSort={isSort}
+            isAscDescSort={isAscDescSort}
           />
 
           <TableBodyContent

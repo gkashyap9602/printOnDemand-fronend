@@ -17,6 +17,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import { checkIfEmpty } from 'utils/helpers'
 
 import { style } from './style'
+import Nodata from 'components/nodata'
 
 const useStyles = style
 
@@ -56,14 +57,14 @@ export const VerticalTabs = ({ tabName, handleCategory, articles, search = null,
   )
 }
 
-export const FaqAccordion = ({ articles, search = null }) => {
+export const FaqAccordion = ({ articles, search = null, count }) => {
   const classes = useStyles()
   return (
     <div className={classes.accordion_FAQ}>
       {!checkIfEmpty(search) && (
         <Typography variant='body2' className={classes.Faq_Accordion_Head}>
           {/* Answers in following categories */}
-          {articles?.length} results for '{search}' in all categories
+          {count} results for '{search}' in all categories
         </Typography>
       )}
       <div className={classes.Faq_Accordion_Content}>
@@ -86,6 +87,7 @@ export const FaqAccordion = ({ articles, search = null }) => {
             </Accordion>
           </div>
         ))}
+        {checkIfEmpty(articles) && <Nodata label='No data found!' />}
       </div>
     </div>
   )

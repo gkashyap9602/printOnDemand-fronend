@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, ButtonGroup, Grid, Typography } from '@material-ui/core'
+import { Button, ButtonGroup, Grid, TextField, Typography } from '@material-ui/core'
 import clsx from 'clsx'
 import Icon from 'icomoons/Icon'
 import style from './style'
@@ -15,7 +15,8 @@ import {
   calculateAmountOfOrder,
   calculateAmountWithQuantity,
   calculateTotalAmount,
-  checkIfEmpty
+  checkIfEmpty,
+  validateDecimal
 } from 'utils/helpers'
 import Nodata from 'components/nodata'
 import { NotificationManager } from 'react-notifications'
@@ -34,7 +35,8 @@ const AddOrder = ({
   updateVariantsOfOrders,
   updateCartItems,
   removeCartItems,
-  isEdit = false
+  isEdit = false,
+  isEuOrUk = false
 }) => {
   const classes = useStyles()
   const route = useRouter()
@@ -133,6 +135,18 @@ const AddOrder = ({
     )
   }
 
+  const handleChange = (e, variant) => {
+    setCount(
+      count.map((item) =>
+        item?.productLibraryVarientId === variant.productLibraryVariantId
+          ? {
+              ...item,
+              [e?.target?.name]: e?.target?.value
+            }
+          : item
+      )
+    )
+  }
   /**
    * On count changes
    */
@@ -180,123 +194,226 @@ const AddOrder = ({
           </Grid>
         </Grid>
       ) : (
-        <div className={classes.orderRow_Wrap}>
-          <div className={classes.rowHeader}>
-            <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Img)}></div>
-            <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Label)}></div>
-            <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Count)}>
-              <Typography variant='body1' style={{ color: '#6c7985' }}>
-                Quantity
+        <>
+          <div className={classes.error}>
+            <div>
+              <Typography variant='body1'>
+                Please fill IOSS, HS code and Declared value fields only if the destination country
+                is EU or UK
               </Typography>
             </div>
-            <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Price)}>
-              <Typography variant='body1' style={{ color: '#6c7985' }}>
-                Item price
-              </Typography>
-            </div>
-            <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Delete)}></div>
           </div>
-          <div className={classes.rowOrder_Root}>
-            {productVariant?.map((variant) => (
-              <div className={classes.rowOrder}>
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Img)}>
-                  <ImageContainer
-                    url={
-                      variant?.productLibraryVariant?.productLibraryVariantImages?.[0]?.imagePath
-                    }
-                    alt='Order'
-                    w={'84'}
-                    h={'87'}
-                    objectFit='cover'
-                  />
-                </div>
 
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Label)}>
-                  <Typography variant='body2' className={classes.orderLabel}>
-                    {variant?.title}
-                  </Typography>
-                  <Typography variant='h4' className={classes.orderSize}>
-                    {variant?.productLibraryVariant?.productVarientOptions?.map((option) => (
-                      <>
-                        {option?.variableTypeName}:<span>{option?.variableOptionValue}</span>
-                        &nbsp;&nbsp;
-                      </>
-                    ))}
-                  </Typography>
-                </div>
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Count)}>
-                  <ButtonGroup size='small' aria-label='small outlined button group'>
-                    <Button
-                      className={classes.counterIcon}
-                      onClick={() => {
-                        if (!navigator?.onLine) {
-                          NotificationManager.error('No active internet connection', '', 10000)
-                        } else {
-                          handleIncrement(variant)
-                        }
-                      }}
-                    >
-                      +
-                    </Button>
-                    <Button className={classes.counterField}>
-                      {
-                        count?.find(
-                          (val) => val?.productLibraryVarientId === variant.productLibraryVariantId
-                        )?.quantity
-                      }
-                    </Button>
-                    <Button
-                      className={classes.counterIcon}
-                      disabled={
-                        count?.find(
-                          (val) => val?.productLibraryVarientId === variant?.productLibraryVariantId
-                        )?.quantity <= 1
-                      }
-                      onClick={() => {
-                        if (!navigator?.onLine) {
-                          NotificationManager.error('No active internet connection', '', 10000)
-                        } else {
-                          handleDecrement(variant)
-                        }
-                      }}
-                    >
-                      -
-                    </Button>
-                  </ButtonGroup>
-                </div>
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Price)}>
-                  <Typography variant='body2'>
-                    ${variant?.productLibraryVariant?.costPrice.toFixed(2)}
-                  </Typography>
-                </div>
-                <div className={classes.btnVisibleXs}>
-                  <Button
-                    onClick={() => handleRemove(variant)}
-                    type='button'
-                    variant='contained'
-                    startIcon={<Icon icon='delete' size={18} />}
-                  >
-                    Delete
-                  </Button>
-                </div>
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Delete)}>
-                  <Icon
-                    icon='delete'
-                    size={16}
-                    color='#8a8a9e'
-                    onClick={() => {
-                      if (!navigator?.onLine) {
-                        NotificationManager.error('No active internet connection', '', 10000)
-                      } else {
-                        handleRemove(variant)
-                      }
-                    }}
-                  />
-                </div>
+          <div className={classes.orderRow_Wrap}>
+            <div className={classes.rowHeader}>
+              <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Img)}></div>
+              <div className={clsx(classes.rowWidth, classes.rowOrder_Label)}></div>
+              <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Count)}>
+                <Typography variant='body1' style={{ color: '#6c7985' }}>
+                  Quantity
+                </Typography>
               </div>
-            ))}
+              <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Price)}>
+                <Typography variant='body1' style={{ color: '#6c7985' }}>
+                  Item price
+                </Typography>
+              </div>
+              <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Delete)}></div>
+            </div>
+            <div className={classes.rowOrder_Root}>
+              {productVariant?.map((variant) => (
+                <div className={classes.rowOrder}>
+                  <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Img)}>
+                    <ImageContainer
+                      url={
+                        variant?.productLibraryVariant?.productLibraryVariantImages?.[0]?.imagePath
+                      }
+                      alt='Order'
+                      w={'84'}
+                      h={'87'}
+                      objectFit='cover'
+                    />
+                  </div>
+
+                  <div className={clsx(classes.rowWidth, classes.rowOrder_Label)}>
+                    <Typography variant='body2' className={classes.orderLabel}>
+                      {variant?.title}
+                    </Typography>
+                    <Typography variant='h4' className={classes.orderSize}>
+                      {variant?.productLibraryVariant?.productVarientOptions?.map((option) => (
+                        <>
+                          {option?.variableTypeName}:<span>{option?.variableOptionValue}</span>
+                          &nbsp;&nbsp;
+                        </>
+                      ))}
+                    </Typography>
+                    <div className={classes?.flexClass}>
+                      <div style={{ marginRight: 10 }} className={classes.mbBottom}>
+                        <Typography variant='body1' className={classes.labelForm}>
+                          HS code
+                        </Typography>
+                        <TextField
+                          // onChange={(e) => handleChange('paytraceId', e?.target?.value)}
+                          name='hsCode'
+                          onInput={(e) => {
+                            if (`${e.target.value}`.length > 15) {
+                              e.target.value = e.target.value.slice(0, 15)
+                            }
+                          }}
+                          type='text'
+                          // helperText={
+                          //   isEuOrUk &&
+                          //   checkIfEmpty(
+                          //     count?.find(
+                          //       (val) =>
+                          //         val?.productLibraryVarientId === variant.productLibraryVariantId
+                          //     )?.hsCode
+                          //   ) &&
+                          //   'The HS code  is required'
+                          // }
+                          // error={
+                          //   isEuOrUk &&
+                          //   checkIfEmpty(
+                          //     count?.find(
+                          //       (val) =>
+                          //         val?.productLibraryVarientId === variant.productLibraryVariantId
+                          //     )?.hsCode
+                          //   ) &&
+                          //   'The HS code  is required'
+                          // }
+                          disabled={!isEuOrUk}
+                          onChange={(e) => handleChange(e, variant)}
+                          value={variant?.hsCode || null}
+                          placeholder='Enter HS code'
+                          variant='outlined'
+                          style={{ marginTop: '10px' }}
+                          fullWidth
+                          InputLabelProps={{
+                            shrink: false
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Typography variant='body1' className={classes.labelForm}>
+                          Declared value
+                        </Typography>
+                        <TextField
+                          onChange={(e) => handleChange(e, variant)}
+                          name='declaredValue'
+                          type='text'
+                          disabled={!isEuOrUk}
+                          value={variant?.declaredValue || null}
+                          placeholder='Enter declared value'
+                          // helperText={
+                          //   isEuOrUk &&
+                          //     count?.find(
+                          //       (val) =>
+                          //         val?.productLibraryVarientId === variant.productLibraryVariantId
+                          //     )?.declaredValue
+                          //    &&
+                          //   'The declared value  is required'
+                          // }
+                          // error={
+                          //   isEuOrUk &&
+                          //   checkIfEmpty(
+                          //     count?.find(
+                          //       (val) =>
+                          //         val?.productLibraryVarientId === variant.productLibraryVariantId
+                          //     )?.declaredValue
+                          //   ) &&
+                          //   'The declared value  is required'
+                          // }
+                          // onKeyPress={(e) => e?.target?.value?.length === 6 && false}
+                          onInput={(e) => {
+                            e?.target?.value=  validateDecimal(e?.target?.value)
+
+                          }}
+                          variant='outlined'
+                          style={{ marginTop: '10px' }}
+                          fullWidth
+                          InputLabelProps={{
+                            shrink: false
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Count)}>
+                    <ButtonGroup size='small' aria-label='small outlined button group'>
+                      <Button
+                        className={classes.counterIcon}
+                        onClick={() => {
+                          if (!navigator?.onLine) {
+                            NotificationManager.error('No active internet connection', '', 10000)
+                          } else {
+                            handleIncrement(variant)
+                          }
+                        }}
+                      >
+                        +
+                      </Button>
+                      <Button className={classes.counterField}>
+                        {
+                          count?.find(
+                            (val) =>
+                              val?.productLibraryVarientId === variant.productLibraryVariantId
+                          )?.quantity
+                        }
+                      </Button>
+                      <Button
+                        className={classes.counterIcon}
+                        disabled={
+                          count?.find(
+                            (val) =>
+                              val?.productLibraryVarientId === variant?.productLibraryVariantId
+                          )?.quantity <= 1
+                        }
+                        onClick={() => {
+                          if (!navigator?.onLine) {
+                            NotificationManager.error('No active internet connection', '', 10000)
+                          } else {
+                            handleDecrement(variant)
+                          }
+                        }}
+                      >
+                        -
+                      </Button>
+                    </ButtonGroup>
+                  </div>
+                  <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Price)}>
+                    <Typography variant='body2'>
+                      ${variant?.productLibraryVariant?.costPrice.toFixed(2)}
+                    </Typography>
+                  </div>
+                  <div className={classes.btnVisibleXs}>
+                    <Button
+                      onClick={() => handleRemove(variant)}
+                      type='button'
+                      variant='contained'
+                      startIcon={<Icon icon='delete' size={18} />}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                  <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Delete)}>
+                    <Icon
+                      icon='delete'
+                      size={16}
+                      color='#8a8a9e'
+                      onClick={() => {
+                        if (!navigator?.onLine) {
+                          NotificationManager.error('No active internet connection', '', 10000)
+                        } else {
+                          handleRemove(variant)
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
       <div className={classes.addProduct_Btn}>
         <Button

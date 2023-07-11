@@ -111,9 +111,9 @@ const storeUploadsColor = {
     color: '#FA5A59'
   },
   5: {
-    bg: '#FAE5E5',
-    border: '#f2e2e2',
-    color: '#FA5A59'
+    bg: '#E6D8C9',
+    border: '#DFD0C0',
+    color: '#947F68'
   }
 }
 const TableBodyContent = ({
@@ -180,6 +180,10 @@ const TableBodyContent = ({
                         `${classes.columnClassName}`,
                         `${title?.type === 'store' ? classes.storeClass : ''}`
                       )}
+                      style={{
+                        whiteSpace: title?.apiName === 'createdOn' && 'nowrap',
+                        textDecoration: list?.isProductVariantDeleted && 'line-through'
+                      }}
                       key={tIdx}
                     >
                       {(() => {
@@ -187,9 +191,11 @@ const TableBodyContent = ({
                           case 'date':
                             return (
                               <Typography variant='h4' className={classes.TextStyle}>
-                                {moment(moment.utc(list[title.apiName]))
-                                  .local()
-                                  .format('YYYY-MMM-DD hh:mm A')}
+                                {list[title.apiName]
+                                  ? moment(moment.utc(list[title.apiName]))
+                                      .local()
+                                      .format('YYYY-MMM-DD hh:mm A')
+                                  : '---'}
                               </Typography>
                             )
                           case 'dateWithoutTime':
@@ -215,11 +221,11 @@ const TableBodyContent = ({
                           case 'source':
                             return (
                               <Typography variant='h4' className={classes.TextStyle}>
-                                {list?.[title?.apiName] === 1 && 'Online portal'}
-                                {list?.[title?.apiName] === 2 && 'Mww Api'}
-                                {list?.[title?.apiName] === 3 && 'Shopify store'}
-                                {list?.[title?.apiName] === 4 && 'Etsy store'}
-                                {list?.[title?.apiName] === 5 && 'Bulk import'}
+                                {list?.[title?.apiName] === 1 && 'Merch maker'}
+                                {list?.[title?.apiName] === 2 && 'MWW system'}
+                                {list?.[title?.apiName] === 3 && 'Shopify'}
+                                {/* {list?.[title?.apiName] === 4 && 'Etsy'} */}
+                                {list?.[title?.apiName] === 5 && 'Excel upload'}
                               </Typography>
                             )
                           case 'sliderImage':
@@ -396,7 +402,7 @@ const TableBodyContent = ({
                                         return 'Failed'
 
                                       case 5:
-                                        return 'Failed'
+                                        return 'Processing'
 
                                       default:
                                         return ''
@@ -418,17 +424,13 @@ const TableBodyContent = ({
                                   whiteSpace: title.apiName === 'displayId' && 'nowrap'
                                 }}
                               >
-                                {!checkIfEmpty(
-                                  title.isShippingValue && list.shippingAddress
-                                    ? list?.shippingAddress[title.shippingAPIname]
-                                    : list[title.apiName]
-                                )
-                                  ? title.isShippingValue && list.shippingAddress
-                                    ? list.shippingAddress[title.shippingAPIname]
-                                    : title.name === 'Company name'
-                                    ? '---'
-                                    : list[title.apiName]
-                                  : '---'}
+                                {title.isShippingValue
+                                  ? checkIfEmpty(list.shippingAddress?.[title?.shippingAPIname])
+                                    ? title.name === 'Company name'
+                                      ? '---'
+                                      : list[title.apiName]
+                                    : list?.shippingAddress?.[title?.shippingAPIname]
+                                  : list[title.apiName] || '---'}
                               </Typography>
                             )
                         }
@@ -476,60 +478,52 @@ const TableBodyContent = ({
                       <Box sx={{ margin: 1 }}>
                         <Typography variant='h6' gutterBottom component='div'>
                           <div className={classes.templateWrap}>
-                            {checkIfEmpty(
-                              lists?.find((val) => open.includes(val?.guid))
-                                ?.productVarientTemplates
-                            )
+                            {checkIfEmpty(list?.productVarientTemplates)
                               ? ' --'
-                              : lists
-                                  ?.find((val) => open.includes(val?.guid))
-                                  ?.productVarientTemplates?.map((val, i) => (
-                                    <>
-                                      <div
-                                        className={classes.sizeTemplateFlex}
-                                        onClick={(e) => {
-                                          e.preventDefault()
-                                          if (navigator.onLine) {
-                                            NotificationManager.info(
-                                              'The template will download shortly'
-                                            )
-                                            downloadFile(val?.fileUrl, val?.fileName)
-                                          } else {
-                                            NotificationManager.error(
-                                              'No active internet connection',
-                                              '',
-                                              10000
-                                            )
+                              : list?.productVarientTemplates?.map((val, i) => (
+                                  <>
+                                    <div
+                                      className={classes.sizeTemplateFlex}
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        if (navigator.onLine) {
+                                          NotificationManager.info(
+                                            'The template will download shortly'
+                                          )
+                                          downloadFile(val?.fileUrl, val?.fileName)
+                                        } else {
+                                          NotificationManager.error(
+                                            'No active internet connection',
+                                            '',
+                                            10000
+                                          )
+                                        }
+                                      }}
+                                    >
+                                      <div className={classes.templateImg}>
+                                        <Image
+                                          src={
+                                            val?.imageType === 1
+                                              ? TemplateDoc
+                                              : val?.imageType === 2
+                                              ? PSD
+                                              : illustrator
                                           }
-                                        }}
-                                      >
-                                        <div className={classes.templateImg}>
-                                          <Image
-                                            src={
-                                              val?.imageType === 1
-                                                ? TemplateDoc
-                                                : val?.imageType === 2
-                                                ? PSD
-                                                : illustrator
-                                            }
-                                            alt='Template'
-                                            width={20}
-                                            height={19}
-                                            layout='responsive'
-                                            objectFit='cover'
-                                          />
-                                        </div>
-                                        <TooltipBootstrap
-                                          title={`${val?.fileName}`}
-                                          placement='top'
-                                        >
-                                          <div className={classes.sizeText}>
-                                            <Typography variant='h4'>{`${val?.fileName}`}</Typography>
-                                          </div>
-                                        </TooltipBootstrap>
+                                          alt='Template'
+                                          width={20}
+                                          height={19}
+                                          layout='responsive'
+                                          objectFit='cover'
+                                        />
                                       </div>
-                                    </>
-                                  ))}
+                                      <TooltipBootstrap title={`${val?.fileName}`} placement='top'>
+                                        <div className={classes.sizeText}>
+                                          <Typography variant='h4'>{`${val?.fileName}`}</Typography>
+                                        </div>
+                                      </TooltipBootstrap>
+                                    </div>
+                                  </>
+                                ))}
                           </div>
                         </Typography>
                       </Box>

@@ -14,8 +14,10 @@ import userStoreReducer from './userStoreReducer'
 import faqReducer from './faqReducer'
 import customerReducer from './admin/customerReducer'
 import adminOrderReducer from './admin/orderReducer'
+import logReducer from './admin/logReducer'
 
 const rootReducer = combineReducers({
+  log: logReducer,
   form: formReducer,
   faq: faqReducer,
   auth: authReducer,

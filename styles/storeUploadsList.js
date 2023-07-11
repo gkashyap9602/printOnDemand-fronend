@@ -20,6 +20,7 @@ export const style = makeStyles((theme) => ({
     justifyContent: 'space-between',
     flexGrow: 1,
     width: '50%',
+    flexWrap: 'wrap',
     '@media screen and (min-width:1001px) and (max-width:1300px)': {
       width: '40%'
     },
@@ -55,6 +56,12 @@ export const style = makeStyles((theme) => ({
     justifyContent: 'flex-end',
     width: '40%',
     marginRight: theme.spacing(2),
+    '@media screen and (max-width:480px)': {
+      flexWrap: 'wrap',
+      '& $searchOrder': {
+        width: '100%'
+      }
+    },
     '@media screen and (max-width:799px)': {
       width: '100%',
       marginBottom: 8,
@@ -113,5 +120,16 @@ export const style = makeStyles((theme) => ({
   },
   orderBtn_New: {
     marginLeft: '5px'
+  },
+  searchOrder: {
+    marginRight: theme.spacing(1)
+  },
+  store_Filterwrapping: {
+    '@media screen and (min-width:481px) and (max-width:600px)': {
+      top: 323
+    },
+    '@media screen and (max-width:480px)': {
+      top: 382
+    }
   }
 }))

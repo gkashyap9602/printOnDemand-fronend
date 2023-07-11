@@ -60,13 +60,15 @@ const CatalogList = ({
    * Fetch all category
    */
   useEffect(async () => {
-    const res = await getAllCategory()
-    if (
-      (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res.hasError) &&
-      res?.StatusCode !== 401
-    ) {
-      setLoader(false)
-      NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
+    if (loader) {
+      const res = await getAllCategory()
+      if (
+        (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res.hasError) &&
+        res?.StatusCode !== 401
+      ) {
+        setLoader(false)
+        NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
+      }
     }
   }, [loader])
 

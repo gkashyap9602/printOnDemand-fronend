@@ -8,6 +8,17 @@ export const style = makeStyles((theme) => ({
     }
   },
 
+  payment_Warning: {
+    background: ' #ffede0',
+    width: '100%',
+    border: '1px solid #e0ffef',
+    borderRadius: '12px',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    padding: '12px'
+  },
+
   successMsg: {
     background: '#e0ffef',
     width: '100%',

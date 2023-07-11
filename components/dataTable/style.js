@@ -207,6 +207,11 @@ const style = makeStyles((theme) => ({
 
   storeClass: {
     width: '15%!important'
+  },
+  widthMediaLg: {
+    '@media screen and (min-width:1409px) and (max-width:1623px)': {
+      width: '15%'
+    }
   }
 }))
 export default style

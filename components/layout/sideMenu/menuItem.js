@@ -25,8 +25,8 @@ const userMenuList = (isSessionIdsFromShopify) => {
       label: 'Stores',
       link: '/store',
       iconFilled: 'stores'
-    },
-    { icon: 'invoice', label: 'Invoices', link: '/comingSoon', iconFilled: 'invoice-filled' }
+    }
+    // { icon: 'invoice', label: 'Invoices', link: '/comingSoon', iconFilled: 'invoice-filled' }
   ]
 }
 const adminMenuList = [
@@ -37,7 +37,8 @@ const adminMenuList = [
     iconFilled: 'total-filled'
   },
   { icon: 'product', label: 'Catalog', link: '/admin/catalogList', iconFilled: 'product-filled' },
-  { icon: 'orders', label: 'Orders', link: '/admin/orders', iconFilled: 'orders-filled' }
+  { icon: 'orders', label: 'Orders', link: '/admin/orders', iconFilled: 'orders-filled' },
+  { icon: 'billing-info', label: 'Logs', link: '/admin/logs', iconFilled: 'billing-info' }
 ]
 
 const MenuItem = ({
@@ -119,7 +120,12 @@ const MenuItem = ({
       {menuList
         ?.filter((data) => data)
         ?.map((item, i) => (
-          <span onClick={() => routeHandler(item)} passHref className={classes.MenuTypo} key={`menuitem-${i}`}>
+          <span
+            onClick={() => routeHandler(item)}
+            passHref
+            className={classes.MenuTypo}
+            key={`menuitem-${i}`}
+          >
             <ListItem
               onClick={() => handleOnClick(item.link)}
               button

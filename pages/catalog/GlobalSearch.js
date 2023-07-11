@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Layout from 'components/layout'
-import { Typography, Grid, InputBase, Button } from '@material-ui/core'
+import { Typography, Grid, InputBase, Button, InputAdornment, IconButton } from '@material-ui/core'
 import { useRouter } from 'next/router'
 import Loader from 'components/loader'
 import { globalSearchAPI } from 'redux/actions/categoryActions'
@@ -12,6 +12,8 @@ import CardBlock from '../../components/pages/product/productList/card'
 import Nodata from 'components/nodata'
 import SearchIcon from '@material-ui/icons/Search'
 import { isActiveInternet } from 'utils/helpers'
+import Icon from 'icomoons/Icon'
+
 const useStyles = style
 
 const GlobalSearch = ({ globalSearchAPI }) => {
@@ -80,10 +82,13 @@ const GlobalSearch = ({ globalSearchAPI }) => {
                     imageUrl={items?.imageUrl}
                     url={
                       title === 'Catalog'
-                        ? `/catalog/${items?.guid}?isGlobalSearch=true`
+                        ? `/catalog/${items?.guid}?isGlobalSearch=${router?.query?.search}`
                         : {
                             pathname: `/catalog/subcategory/product`,
-                            query: { subcategory: items.guid, isGlobalSearch: true }
+                            query: {
+                              subcategory: items.guid,
+                              isGlobalSearch: router?.query?.search
+                            }
                           }
                     }
                   />
@@ -130,6 +135,21 @@ const GlobalSearch = ({ globalSearchAPI }) => {
                 onChange={(e) => {
                   setvalue(e.target.value)
                 }}
+                endAdornment={
+                  <InputAdornment position='end'>
+                    <IconButton
+                      aria-label='toggle password visibility'
+                      onClick={() =>
+                        router.push({
+                          pathname: '/catalog'
+                        })
+                      }
+                      edge='end'
+                    >
+                      <Icon icon='close-red-light-icon' size={20} />
+                    </IconButton>
+                  </InputAdornment>
+                }
               />
             </div>
             <Button disabled={!value || value.length < 4} type='submit' variant='contained'>

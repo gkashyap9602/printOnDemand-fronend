@@ -34,7 +34,7 @@ const MultiSelect = ({
   const [fieldItem, setFieldItem] = React.useState([])
   React.useEffect(() => {
     setFieldItem(selectedMultipleValue)
-  }, [selectedMultipleValue.length !== 0])
+  }, [selectedMultipleValue.length !== 0, id === 'subcategory' && selectedMultipleValue])
 
   React.useEffect(() => {
     if (selectedMultipleValue.length === 0) {

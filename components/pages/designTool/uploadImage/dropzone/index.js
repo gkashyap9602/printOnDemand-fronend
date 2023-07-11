@@ -6,13 +6,17 @@ import Icon from 'icomoons/Icon'
 import style from '../style'
 import { useDropzone } from 'react-dropzone'
 import { NotificationManager } from 'react-notifications'
-
+import { piexif } from 'piexifjs'
 import { useDispatch, useSelector } from 'react-redux'
+const { BlockBlobClient, newPipeline } = require('@azure/storage-blob')
 
 import {
   uploadImage,
   addImageToCanvas,
-  saveImageToPhotoLibrary
+  saveImageToPhotoLibrary,
+  getUploadImageURL,
+  saveDesignImage,
+  uploadToImageURL
 } from 'redux/actions/designToolActions'
 
 import { v4 as uuidv4 } from 'uuid'
@@ -29,10 +33,10 @@ const Dropzone = ({ setModalClose, showLoader }) => {
         message: `Only image upload is allowed`
       }
     }
-    if (Math.round(file.size / 1024) > 102400) {
+    if (Math.round(file.size / 1024) > 153600) {
       return {
         code: 'size-too-large',
-        message: `Uploaded file size is greater than 100MB.`
+        message: `Uploaded file size is greater than 150MB.`
       }
     }
 
@@ -41,13 +45,51 @@ const Dropzone = ({ setModalClose, showLoader }) => {
   const onDrop = useCallback(
     (acceptedFiles) => {
       // Do something with the files
-      showLoader(true)
+      if (acceptedFiles.length > 0) showLoader(true)
       acceptedFiles.forEach((file) => {
         const reader = new FileReader()
         reader.readAsDataURL(file)
         reader.onload = (e) => {
           // Do whatever you want with the file contents
-          const b64Str = reader.result
+
+          let b64Str
+          const fileNameToCheckFor = file.name.toLowerCase()
+          if(fileNameToCheckFor.includes(".jpg") || fileNameToCheckFor.includes(".jpeg") || fileNameToCheckFor.includes(".tif")){
+            // const piexifData = piexif.load(reader.result)
+
+            // piexifData['0th'] = {}
+            // piexifData['Exif'] = {}
+            // piexifData["GPS"] = {}
+            // piexifData["Interop"] = {}
+            // piexifData["1st"] = {}
+            // const exifbytes = piexif.dump(piexifData)
+            b64Str = piexif.remove(reader.result)
+  
+            function dataURLtoFile(dataurl, filename) {
+   
+              var arr = dataurl.split(','),
+                  mime = arr[0].match(/:(.*?);/)[1],
+                  bstr = atob(arr[1]), 
+                  n = bstr.length, 
+                  u8arr = new Uint8Array(n);
+                  
+              while(n--){
+                  u8arr[n] = bstr.charCodeAt(n);
+              }
+              
+              return new File([u8arr], filename, {type:mime});
+            }
+  
+            file = dataURLtoFile(b64Str, file.name);
+          }else{
+
+            b64Str = reader.result
+          }
+          
+
+          //const b64Str = piexif.remove(reader.result)
+
+          // console.log("reader result after removing exif is ", b64Str)
           // const URLObject = URL.createObjectURL(file)
           var image = new Image()
 
@@ -65,28 +107,59 @@ const Dropzone = ({ setModalClose, showLoader }) => {
             // alert('Uploaded image has valid Height and Width.')
             // return true
             let uuid = uuidv4()
-            let imagePayload = {
-              guid: uuid,
-              imageType: 1,
-              image: {
-                fileName: file.name,
-                fileData: b64Str.split(',')[1]
-              }
+
+            let imgPayLoad = {
+              fileName: file.name
             }
-            dispatch(saveImageToPhotoLibrary(imagePayload)).then((res) => {
-              let uploadedImage = {
-                file: res.response.imagePath,
-                fileName: file.name,
-                initialWidth,
-                initialHeight,
-                libraryImageId: res.response.libraryImageId,
-                guid: uuid
-                // fromPhotoLibrary: false
+            dispatch(getUploadImageURL(imgPayLoad)).then((res) => {
+              const url = res.response.imageUrl
+              const requestId = res.response.requestId
+              const blockBlobClient = new BlockBlobClient(url, newPipeline())
+              const uploadOptions = {
+                blockSize: 1 * 1024 * 1024,
+                concurrency: 10,
+                maxSingleShotSize: 5
               }
-              dispatch(uploadImage(uploadedImage))
-              // NotificationManager.success('Image uploaded successfully', '', 3000)
-              dispatch(addImageToCanvas({ uuid: uuid, ...uploadedImage }))
+
+              // fetch(`${url}`, {
+              //   method: 'PUT',
+              //   headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'image/png' },
+              //   body: file
+              // }).then((response) => {
+
+              blockBlobClient.uploadData(file, uploadOptions).then((response) => {
+                dispatch(saveDesignImage({ guid: uuid, uploadRequestId: requestId })).then(
+                  (result) => {
+                    let uploadedImage = {
+                      file: result.response.imagePath,
+                      fileName: file.name,
+                      initialWidth,
+                      initialHeight,
+                      libraryImageId: result.response.libraryImageId,
+                      guid: uuid
+                      // fromPhotoLibrary: false
+                    }
+                    dispatch(uploadImage(uploadedImage))
+                    // NotificationManager.success('Image uploaded successfully', '', 3000)
+                    dispatch(addImageToCanvas({ uuid: uuid, ...uploadedImage }))
+                  }
+                )
+              })
             })
+            // dispatch(saveImageToPhotoLibrary(imagePayload)).then((res) => {
+            //   let uploadedImage = {
+            //     file: res.response.imagePath,
+            //     fileName: file.name,
+            //     initialWidth,
+            //     initialHeight,
+            //     libraryImageId: res.response.libraryImageId,
+            //     guid: uuid
+            //     // fromPhotoLibrary: false
+            //   }
+            //   dispatch(uploadImage(uploadedImage))
+            //   // NotificationManager.success('Image uploaded successfully', '', 3000)
+            //   dispatch(addImageToCanvas({ uuid: uuid, ...uploadedImage }))
+            // })
           }
         }
 
@@ -112,6 +185,7 @@ const Dropzone = ({ setModalClose, showLoader }) => {
         break
       } else {
         NotificationManager.error(fileRejections[i].errors[0].message, '', 10000)
+        showLoader(false)
       }
     }
   }, [fileRejections])

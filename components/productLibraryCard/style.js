@@ -3,7 +3,8 @@ import { makeStyles } from '@material-ui/core/styles'
 const style = makeStyles((theme) => ({
   libraryCard_Wrapper: {
     marginTop: theme.spacing(2),
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
+    display: 'flex'
   },
   productLibrary_Flex: {
     display: 'flex',
@@ -11,7 +12,68 @@ const style = makeStyles((theme) => ({
     width: '100%',
     marginBottom: 16
   },
+  bgCheck_Box: {
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
 
+    '& .MuiFormControlLabel-root': {
+      marginLeft: '0px!important',
+
+      '& .MuiTypography-root': {
+        color: '#292d2f',
+        fontSize: 14,
+        fontWeight: '400',
+        lineHeight: '22px'
+      },
+
+      '& .MuiIconButton-root': {
+        '&:hover': {
+          background: '#fff'
+        },
+        '&:focus': {
+          background: '#3374b6'
+        }
+      },
+      '& .MuiCheckbox-root': {
+        color: '#CACED7',
+        width: 23,
+        height: 23,
+        marginRight: 10
+      },
+
+      '& .MuiCheckbox-colorSecondary.Mui-checked': {
+        color: '#ccc',
+        background: '#3374b6',
+        width: 23,
+        height: 23,
+        borderRadius: 13,
+        '&:hover': {
+          background: '#3374b6'
+        },
+        '& .MuiIconButton-label': {
+          border: 'unset'
+        },
+        '& .MuiSvgIcon-root': {
+          fill: '#fff',
+          padding: 3
+        }
+      },
+
+      '& .MuiIconButton-label': {
+        fontSize: 24,
+
+        border: '2px solid #d4d4d4',
+        width: 23,
+        height: 23,
+        borderRadius: 13,
+
+        '& .MuiSvgIcon-root': {
+          fill: 'transparent',
+          padding: 3
+        }
+      }
+    }
+  },
   pdtCheck: {
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(2),
@@ -92,6 +154,7 @@ const style = makeStyles((theme) => ({
   cover: {
     width: 252,
     cursor: 'pointer',
+    background: '#f5f5f5',
     [theme.breakpoints.down('xs')]: {
       width: '100%'
     }

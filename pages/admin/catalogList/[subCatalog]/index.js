@@ -64,26 +64,28 @@ const SubCatalogList = ({
    * Fetch all sub category
    */
   useEffect(async () => {
-    const {
-      query: { subCatalog }
-    } = router
-    const isGuid =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-        subCatalog
-      )
-    if (subCatalog && isGuid) {
-      const res = await getAllSubcategory(subCatalog)
-      if (res?.StatusCode >= 400 && res?.StatusCode <= 500 && res?.StatusCode !== 401) {
-        setLoader(false)
-        NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
-      } else {
-        setLoader(false)
+    if (loader) {
+      const {
+        query: { subCatalog }
+      } = router
+      const isGuid =
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          subCatalog
+        )
+      if (subCatalog && isGuid) {
+        const res = await getAllSubcategory(subCatalog)
+        if (res?.StatusCode >= 400 && res?.StatusCode <= 500 && res?.StatusCode !== 401) {
+          setLoader(false)
+          NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
+        } else {
+          setLoader(false)
+        }
       }
-    }
-    if (!isGuid) {
-      isActiveInternet(router, {
-        pathname: '/PageNotFound'
-      })
+      if (!isGuid) {
+        isActiveInternet(router, {
+          pathname: '/PageNotFound'
+        })
+      }
     }
   }, [router?.query, loader])
 

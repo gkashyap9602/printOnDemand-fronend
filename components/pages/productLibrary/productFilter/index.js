@@ -83,6 +83,8 @@ const ProductFilter = ({
    */
   const handleRemove = (itm) => {
     if (itm === 'all') {
+      setcategoryId([])
+      setmaterialId([])
       setcategoryData(
         categories?.map((value) => ({
           ...value,
@@ -92,13 +94,11 @@ const ProductFilter = ({
       setmaterialData(material?.map((val) => ({ ...val, checked: false })))
       apiCall({
         materialFilter: null,
-        materialIds: null,
+        materialIds: [],
         categoryFilter: [route?.query?.subcategory],
         pageIndex: 0,
         pageSize: 10
       })
-      setcategoryId([])
-      setmaterialId([])
     } else {
       setmaterialData(
         materialData?.map((val) =>
@@ -170,7 +170,7 @@ const ProductFilter = ({
         <SearchArea
           placeholder='Search products'
           handleSearch={handleSearch}
-          searchValue={prevQuery?.searchKey}
+          searchValue={prevQuery?.searchKey ? prevQuery.searchKey : null}
         />
         {/* <!--search bar--> */}
         <div className={classes.clearWrap}>

@@ -15,6 +15,12 @@ export const style = makeStyles((theme) => ({
     top: '11px',
     right: '-18px'
   },
+  '@media screen and (max-width:600px)': {
+    download_Btn_Filt: {
+      marginBottom: theme.spacing(1)
+    }
+  },
+
   bgTab_Info: {
     boxShadow: '0 2px 20px rgba(38, 41, 44, 0.07)',
     borderRadius: 6,
@@ -33,7 +39,7 @@ export const style = makeStyles((theme) => ({
 
     '& .MuiTypography-h3': {
       color: '#303337',
-      fontFamily: 'Inter Bold',
+      fontFamily: 'Inter SemiBold',
       marginBottom: 3,
       fontWeight: 400
     },
@@ -154,7 +160,7 @@ export const style = makeStyles((theme) => ({
         color: '#303337',
         fontFamily: 'Inter SemiBold',
         fontSize: 16,
-        fontWeight: 700
+        fontWeight: 400
       }
     }
   },

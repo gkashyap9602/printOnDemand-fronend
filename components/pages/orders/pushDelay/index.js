@@ -164,7 +164,7 @@ function PushDelay({
             variant='contained'
             className={classes.btnApply}
           >
-            apply
+            Apply
           </Button>
         </div>
       </div>

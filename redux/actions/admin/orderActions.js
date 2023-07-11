@@ -13,6 +13,12 @@ export const fetchAllOrders = (data) => {
   return fetchHandler(fetchOptions)
 }
 
+export const updateAdminOrderQuery = (val) => {
+  return {
+    type: ADMIN.UPDATE_ORDER_QUERY_ADMIN,
+    val
+  }
+}
 export const fetchOrderDetails = (id) => {
   const fetchOptions = {
     url: `api/Orders/${id}`,

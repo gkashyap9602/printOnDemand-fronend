@@ -66,6 +66,28 @@ export const style = makeStyles((theme) => ({
       display: 'none'
     }
   },
+  filter_Wrap_UI: {
+    top: 159,
+    right: 53,
+    '@media screen and (max-width:434px)': {
+      right: 35,
+      top: 267,
+      width: 263
+    },
+    '@media screen and (min-width:435px) and (max-width:600px)': {
+      right: 35,
+      top: 266,
+      width: 350
+    },
+    '@media screen and (min-width:601px) and (max-width:739px)': {
+      right: 48,
+      top: 193
+    },
+    '@media screen and (min-width:740px) and (max-width:1200px)': {
+      right: 55,
+      top: 193
+    }
+  },
   filter_Wrap: {
     right: 179,
     '& .react-datepicker-wrapper': {
@@ -104,6 +126,7 @@ export const style = makeStyles((theme) => ({
   product_Wrap_Sort: {
     top: 86,
     right: 85,
+    zIndex: 1000,
     '@media screen and (max-width:380px)': {
       right: 35,
       top: 226,

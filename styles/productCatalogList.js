@@ -71,7 +71,10 @@ export const style = makeStyles((theme) => ({
     marginBottom: theme.spacing(2),
     marginTop: theme.spacing(2),
     background: '#fff',
-    marginRight: '8px'
+    marginRight: '8px',
+    '& .MuiIconButton-edgeEnd': {
+      marginRight: '0px!important'
+    }
   },
   ProjectCenter: {
     margin: '115px 0px 0px 0px'

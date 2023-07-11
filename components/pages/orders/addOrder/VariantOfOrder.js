@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, ButtonGroup, Grid, Typography } from '@material-ui/core'
+import { Button, ButtonGroup, Grid, TextField, Typography } from '@material-ui/core'
 import clsx from 'clsx'
 import Icon from 'icomoons/Icon'
 import style from './style'
@@ -7,7 +7,7 @@ import ImageContainer from 'components/imageContainer'
 import { useRouter } from 'next/router'
 import { connect } from 'react-redux'
 import { updateVariantsOfOrders } from 'redux/actions/orderActions'
-import { calculateAmountOfOrder, calculateAmountWithQuantity, checkIfEmpty } from 'utils/helpers'
+import { calculateAmountOfOrder, calculateAmountWithQuantity, checkIfEmpty, validateDecimal } from 'utils/helpers'
 import { NotificationManager } from 'react-notifications'
 import Nodata from 'components/nodata'
 const useStyles = style
@@ -22,10 +22,12 @@ const VariantOfOrder = ({
   orderDetail,
   productId,
   productLibraryVariantLength,
-  handleCount = () => {},
+  handleCount = () => { },
   updateVariantsOfOrders,
-  isProduction = false
-}) => {
+  isProduction = false,
+  isEuOrUk = false
+
+}) => { 
   const classes = useStyles()
   const [count, setCount] = useState(
     variants?.map((value) => ({
@@ -34,7 +36,13 @@ const VariantOfOrder = ({
       totalPrice: value?.costPrice,
       price: value?.costPrice,
       guid: value?.guid,
-      productCode: value?.productCode
+      productCode: value?.productCode,
+      hsCode: orderDetail?.lineItems?.find(
+        (val) => val?.productLibraryVarientId === value?.libraryVariantId
+      )?.hsCode,
+    declaredValue: orderDetail?.lineItems?.find(
+      (val) => val?.productLibraryVarientId === value?.libraryVariantId
+    )?.declaredValue,
     }))
   )
   const route = useRouter()
@@ -44,7 +52,15 @@ const VariantOfOrder = ({
    * Set variant details
    */
   useEffect(() => {
-    setproductVariant(variants)
+    setproductVariant(variants?.map((value) => ({
+     ...value,
+      hsCode: orderDetail?.lineItems?.find(
+        (val) => val?.productLibraryVarientId === value?.libraryVariantId
+      )?.hsCode,
+    declaredValue: orderDetail?.lineItems?.find(
+      (val) => val?.productLibraryVarientId === value?.libraryVariantId
+    )?.declaredValue,
+    })))
     setCount(
       variants?.map((value) => ({
         productLibraryVarientId: value?.libraryVariantId,
@@ -52,7 +68,13 @@ const VariantOfOrder = ({
         totalPrice: value?.costPrice,
         price: value?.costPrice,
         guid: value?.guid,
-        productCode: value?.productCode
+        productCode: value?.productCode,
+        hsCode: orderDetail?.lineItems?.find(
+            (val) => val?.productLibraryVarientId === value?.libraryVariantId
+          )?.hsCode,
+        declaredValue: orderDetail?.lineItems?.find(
+          (val) => val?.productLibraryVarientId === value?.libraryVariantId
+        )?.declaredValue,
       }))
     )
   }, [variants])
@@ -66,10 +88,10 @@ const VariantOfOrder = ({
       count.map((item) =>
         item?.productLibraryVarientId === variant.libraryVariantId
           ? {
-              ...item,
-              quantity: item.quantity + 1,
-              totalPrice: calculateAmountWithQuantity(item?.quantity + 1, variant?.costPrice)
-            }
+            ...item,
+            quantity: item.quantity + 1,
+            totalPrice: calculateAmountWithQuantity(item?.quantity + 1, variant?.costPrice)
+          }
           : item
       )
     )
@@ -77,9 +99,9 @@ const VariantOfOrder = ({
       productVariant.map((item) =>
         item?.libraryVariantId === variant.libraryVariantId
           ? {
-              ...item,
-              quantity: item.quantity + 1
-            }
+            ...item,
+            quantity: item.quantity + 1
+          }
           : item
       )
     )
@@ -93,10 +115,10 @@ const VariantOfOrder = ({
       count.map((item) =>
         item?.productLibraryVarientId === variant.libraryVariantId
           ? {
-              ...item,
-              quantity: item.quantity - 1,
-              totalPrice: calculateAmountWithQuantity(item?.quantity - 1, variant?.costPrice)
-            }
+            ...item,
+            quantity: item.quantity - 1,
+            totalPrice: calculateAmountWithQuantity(item?.quantity - 1, variant?.costPrice)
+          }
           : item
       )
     )
@@ -105,9 +127,9 @@ const VariantOfOrder = ({
       productVariant.map((item) =>
         item?.libraryVariantId === variant.libraryVariantId
           ? {
-              ...item,
-              quantity: item.quantity - 1
-            }
+            ...item,
+            quantity: item.quantity - 1
+          }
           : item
       )
     )
@@ -144,6 +166,30 @@ const VariantOfOrder = ({
       })
     }
   }
+  
+  const handleChange = (e, variant) => {
+    setCount(
+      count.map((item) =>
+        item?.productLibraryVarientId === variant.libraryVariantId
+          ? {
+              ...item,
+              [e?.target?.name]: e?.target?.value
+            }
+          : item
+      )
+    )
+    setproductVariant(
+      variants.map((item) =>
+        item?.guid === variant?.guid
+          ? {
+              ...item,
+              [e?.target?.name]: e?.target?.value
+            }
+          : item
+      )
+    )
+  }
+
   //HTML
   return (
     <div className={classes.blockOrder}>
@@ -184,7 +230,7 @@ const VariantOfOrder = ({
                   />
                 </div>
 
-                <div className={clsx(classes.rowOrder_Width, classes.rowOrder_Label)}>
+                <div className={clsx(classes.rowWidth, classes.rowOrder_Label)}>
                   <Typography variant='body2' className={classes.orderLabel}>
                     {variant?.name}
                   </Typography>
@@ -196,7 +242,57 @@ const VariantOfOrder = ({
                       </>
                     ))}
                   </Typography>
+                  <div className={classes?.flexClass}>
+                      <div style={{ marginRight: 10 }} className={classes.mbBottom}>
+                        <Typography variant='body1' className={classes.labelForm}>
+                          HS code
+                        </Typography>
+                        <TextField
+                          name='hsCode'
+                          onInput={(e) => {
+                            if (`${e.target.value}`.length > 15) {
+                              e.target.value = e.target.value.slice(0, 15)
+                            }
+                          }}
+                          type='text'
+                          disabled={!isEuOrUk}
+                          onChange={(e) => handleChange(e, variant)}
+                          value={variant.hsCode || null}
+                          placeholder='Enter HS code'
+                          variant='outlined'
+                          style={{ marginTop: '10px' }}
+                          fullWidth
+                          InputLabelProps={{
+                            shrink: false
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Typography variant='body1' className={classes.labelForm}>
+                          Declared value
+                        </Typography>
+                        <TextField
+                          onChange={(e) => handleChange(e, variant)}
+                          name='declaredValue'
+                          type='text'
+                          disabled={!isEuOrUk}
+                          value={variant.declaredValue || null}
+                          placeholder='Enter declared value'
+                           onInput={(e) => {
+                            e?.target?.value=  validateDecimal(e?.target?.value)
+                          }}
+                          variant='outlined'
+                          style={{ marginTop: '10px' }}
+                          fullWidth
+                          InputLabelProps={{
+                            shrink: false
+                          }}
+                        />
+                      </div>
+                  </div>
                 </div>
+                
+                
                 <div
                   className={clsx(
                     classes.rowOrder_Width,
@@ -267,8 +363,9 @@ const VariantOfOrder = ({
           </div>
         </div>
       )}
+      {/* Hided the 'Add more products' button */}
 
-      {!isProduction && (
+      {/* {!isProduction && (
         <div className={classes.addProduct_Btn}>
           <Button
             type='submit'
@@ -285,7 +382,7 @@ const VariantOfOrder = ({
             Add more products
           </Button>
         </div>
-      )}
+      )} */}
       <div className={classes.orderAmount}>
         <div style={{ marginRight: '10px' }}>
           <Icon icon='dollar-amount' size={20} />

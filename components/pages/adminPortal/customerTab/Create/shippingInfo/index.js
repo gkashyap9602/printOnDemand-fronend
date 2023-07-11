@@ -4,11 +4,13 @@ import TextInput from 'components/TextInput'
 import { SHIPPING_INFO_ADMIN } from 'constants/fields'
 import React, { useEffect, useState } from 'react'
 import { connect } from 'react-redux'
-import { Field, reduxForm, change as changeFieldValue } from 'redux-form'
+import { Field, reduxForm, change as changeFieldValue, Form } from 'redux-form'
 import { style } from 'styles/profile'
-import { selectFieldFormat } from 'utils/helpers'
+import { checkIfEmpty, selectFieldFormat } from 'utils/helpers'
 import CheckIcon from '@material-ui/icons/Check'
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked'
+import { usePrevious } from 'utils/hooks'
+import CheckBoxInput from 'components/Checkbox'
 const useStyles = style
 
 /**
@@ -24,10 +26,15 @@ function ShippingInfo({
   states,
   changeFieldValue,
   handleCheck,
-  isChecked
+  isChecked = false
 }) {
   const classes = useStyles()
   const [FORM, setFORM] = useState(SHIPPING_INFO_ADMIN)
+  const [disable, setdisable] = useState(false)
+
+  // useEffect(() => {
+  //   data?.stateName === 'NC' ? setdisable(true) : setdisable(false)
+  // }, [data?.stateName])
 
   /**
    * Set country options in the required format
@@ -36,11 +43,17 @@ function ShippingInfo({
     setFORM(
       FORM?.map((v) =>
         v?.name === 'stateName'
-          ? {
-              ...v,
-              type: 'select',
-              options: v?.name === 'stateName' && selectFieldFormat(states)
-            }
+          ? data?.country === 'US'
+            ? {
+                ...v,
+                type: 'select',
+                options: v?.name === 'stateName' && selectFieldFormat(states)
+              }
+            : {
+                ...v,
+                type: 'text',
+                options: []
+              }
           : v?.name === 'country'
           ? {
               ...v,
@@ -50,7 +63,7 @@ function ShippingInfo({
           : v
       )
     )
-  }, [countryList && states])
+  }, [countryList && states && data])
 
   /**
    * handle onchange function of fields
@@ -58,6 +71,12 @@ function ShippingInfo({
    * @param {*} value
    */
   const onHandleChange = async (field, value) => {
+    if (field?.name === 'stateName' && value === 'NC') {
+      handleCheck({ target: { checked: false } })
+      // setdisable(true)
+    } else if (field?.name === 'stateName' && value !== 'NC') {
+      // setdisable(false)
+    }
     if (field?.name === 'country' && value === 'US') {
       UpdateFormField('stateName', states)
       handleChange(field?.name, value)
@@ -95,6 +114,9 @@ function ShippingInfo({
   useEffect(async () => {
     data &&
       Object.entries(data)?.map((val) => changeFieldValue('ShippingInfoForm', val?.[0], val?.[1]))
+    if (checkIfEmpty(data)) {
+      FORM?.map((val) => changeFieldValue('ShippingInfoForm', val?.name, null))
+    }
   }, [data])
 
   //html
@@ -123,12 +145,12 @@ function ShippingInfo({
         <div className={classes.profileCheckBox}>
           <FormControlLabel
             control={
-              <Checkbox
-                name={'same'}
-                onChange={handleCheck}
+              <Field
+                name='same'
+                disabled={disable}
+                onChange={(v) => handleCheck({ target: { checked: v } })}
                 isChecked={isChecked}
-                checkedIcon={<CheckIcon fontSize='medium' />}
-                icon={<RadioButtonUncheckedIcon color='primary' />}
+                component={CheckBoxInput}
               />
             }
             label={'Billing address is same as shipping address'}

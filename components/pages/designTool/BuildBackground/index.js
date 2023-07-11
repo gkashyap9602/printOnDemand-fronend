@@ -30,13 +30,12 @@ const BuildBackground = ({
   const [showPalatte, setShowPalatte] = useState(false)
   const showPalatteHandler = () => {
     setShowPalatte(!showPalatte)
-    handleCollapse()
+    handleCollapse(false)
   }
 
   const design = useSelector((state) => state.design)
   const designModel = useSelector((state) => state.designModel)
   const dispatch = useDispatch()
-
   const editViewColor = useCallback(() => {
     dispatch(changeViewColor(design.fabricViewSelected, fabricViewSelectedColor))
   }, [design.fabricViewSelected, fabricViewSelectedColor])

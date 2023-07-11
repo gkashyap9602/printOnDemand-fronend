@@ -120,7 +120,7 @@ function OrderDetails({
           <div style={{ flexGrow: 1 }}>
             <div className={classes.orderHead}>
               <Typography variant='h3'>
-                Order #{order?.displayId}{' '}
+                Merch maker# {order?.displayId}{' '}
                 <span className={classes.spanOrder}>
                   {(() => {
                     switch (order?.status) {
@@ -282,7 +282,7 @@ function OrderDetails({
                 <Grid container spacing={3} direction='row'>
                   {order?.lineItems?.map((item) => (
                     <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={item?.guid}>
-                      <CardBlock item={item} />
+                      <CardBlock item={item} country={order?.shippingAddress?.country} />
                     </Grid>
                   ))}
                 </Grid>
@@ -312,7 +312,7 @@ function OrderDetails({
             </Grid>
             <Grid item xs={12} sm={12} md={4} lg={4} xl={4}>
               <Typography variant='h4' className={classes.orderLabel}>
-                Order #
+                Merch maker #
               </Typography>
               <Typography variant='body2' className={classes.orderContent}>
                 {order?.displayId || '---'}

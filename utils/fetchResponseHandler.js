@@ -3,17 +3,7 @@ import { publicRoutes } from 'constants/routePaths'
 import { isShopifyApp } from './helpers'
 
 const API_URL = process.env.BASE_URL
-/**
- * fetchHandler handles the API requests.
- * ////////////////SAMPLE///////////////
- * {
-		url: "api/Authentication/login",
-		method: "POST",
-		actionType: AUTH.SEND_LOGIN_CREDENTIALS,
-		body: JSON.stringify(creds),
-		secure: false,
-	}
- */
+
 const sleep = (milliseconds) => {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }

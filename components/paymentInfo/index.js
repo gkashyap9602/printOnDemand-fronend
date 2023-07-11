@@ -65,12 +65,16 @@ let PaymentInfo = ({
   const classes = useStyles()
   const [errors, setErrors] = useState({})
   const route = useRouter()
+  const {
+    query: { ccNumber: encryptCC }
+  } = route
   const [loaderBtn, setloaderBtn] = useState(false)
   const data = { name, ccNumber, expirationMonth, expirationYear }
   const [currentValue, setCurrentValue] = useState({ country: '', stateName: '' })
   const [shippingInfoForms, setShippingInfoForms] = useState(CARD_INFO)
   const [popup, setpopup] = useState(false)
   const [customerId, setCustomerId] = useState()
+
   /**
    * Initial useeffect
    */
@@ -244,7 +248,14 @@ let PaymentInfo = ({
   /**
    * Set card address value
    */
+  // useEffect(() => {}, [])
+
+  /**
+   * Validate fields
+   */
   useEffect(() => {
+    const values = { name, ccNumber, expirationMonth, expirationYear, userId, customerIds }
+    const error = validateFields(values, PAYMENT_INFO)
     const shippingValues = {
       address1,
       phone,
@@ -254,16 +265,7 @@ let PaymentInfo = ({
       zipCode
     }
     const shippingError = validateFields(shippingValues, CARD_INFO)
-    setErrors(shippingError)
-  }, [address1, stateName, city, phone, country, zipCode])
-
-  /**
-   * Validate fields
-   */
-  useEffect(() => {
-    const values = { name, ccNumber, expirationMonth, expirationYear, userId, customerIds }
-    const error = validateFields(values, PAYMENT_INFO)
-    setErrors(error)
+    setErrors({ ...error, ...shippingError })
     if (
       !checkIfEmpty(expirationMonth) &&
       !checkIfEmpty(expirationYear) &&
@@ -272,7 +274,20 @@ let PaymentInfo = ({
     ) {
       setErrors({ ...errors, expirationMonth: 'Invalid expiry month' })
     }
-  }, [name, ccNumber, expirationMonth, expirationYear, userId, customerIds])
+  }, [
+    name,
+    ccNumber,
+    expirationMonth,
+    expirationYear,
+    userId,
+    customerIds,
+    address1,
+    stateName,
+    city,
+    phone,
+    country,
+    zipCode
+  ])
 
   /**
    * Payment Submit
@@ -285,7 +300,7 @@ let PaymentInfo = ({
         saveHandler()
       }, 2000)
     }
-  }, [!checkIfEmpty(route.query) && isShopifyApp()])
+  }, [encryptCC && isShopifyApp()])
 
   /**
    * Submit
@@ -296,7 +311,7 @@ let PaymentInfo = ({
     } else if (!checkIfEmpty(route.query) && !isShopifyApp()) {
       saveHandler()
     }
-  }, [!checkIfEmpty(route.query) && !isShopifyApp()])
+  }, [route.query && !isShopifyApp()])
 
   /**
    * Save handler
@@ -348,7 +363,7 @@ let PaymentInfo = ({
       })
     }
 
-    if (res.StatusCode === 12002) {
+    if (res.StatusCode === 12002 && res.StatusCode === 401) {
       setloaderBtn(false)
       NotificationManager.error(res?.Response?.Message, '', 10000)
     } else if (res?.statusCode === 200) {

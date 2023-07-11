@@ -24,8 +24,10 @@ const TableHeader = ({
   checkBoxHandler = () => {},
   options = [],
   lists = [],
+  PageId = '',
   collapse = false,
-  isSort
+  isSort,
+  isAscDescSort = false
 }) => {
   const classes = useStyles()
 
@@ -43,7 +45,20 @@ const TableHeader = ({
                       checkedIcon={<CheckIcon fontSize='medium' />}
                       icon={<RadioButtonUncheckedIcon color='primary' />}
                       onChange={(e) => checkBoxHandler(e)}
-                      checked={lists?.length && isCheck?.length === lists?.length}
+                      checked={
+                        lists?.length &&
+                        isCheck?.length !== 0 &&
+                        isCheck?.length ===
+                          (PageId === 'order_page'
+                            ? lists.filter((ele) => ele?.source !== 5)?.length
+                            : PageId === 'store_uploads'
+                            ? lists.filter((ele) => ele?.pushStatus === 4)?.length
+                            : PageId === 'product_variant'
+                            ? lists.filter((ele) => !ele?.isProductVariantDeleted)?.length
+                            : PageId === 'dtool_page'
+                            ? lists.filter((ele) => ele?.designerAvailable)?.length
+                            : lists?.length)
+                      }
                     />
                   }
                 />
@@ -53,30 +68,35 @@ const TableHeader = ({
         )}
         {tableTitles?.map((tableTitleObj) => (
           <TableCell
-            onClick={tableTitleObj?.sortName ? () => sortFunction(tableTitleObj) : null}
             key={tableTitleObj.id}
-            className={tableTitleObj?.lgWidth ? classes.width : ''}
+            onClick={!isAscDescSort ? () => sortFunction(tableTitleObj) : null}
+            className={
+              (tableTitleObj?.lgWidth ? classes.width : '',
+              tableTitleObj?.headerClassName && classes.widthMediaLg)
+            }
           >
             <div style={{ display: 'flex', alignItems: 'baseline' }}>
               <Typography variant='body1' className={classes.TextStyle}>
                 {tableTitleObj.name}
               </Typography>
-              {tableTitleObj?.sortName ? (
-                <span style={{ display: 'flex', cursor: 'pointer' }}>
-                  {isSort === tableTitleObj?.id ? (
-                    tableTitleObj?.isAscending ? (
-                      <Icon icon='sort-up' size={16} color='#717171' />
-                    ) : (
-                      <Icon icon='sort-down' size={16} color='#717171' />
-                    )
-                  ) : (
-                    <Fragment>
-                      <Icon icon='sort-up' size={14} color='#9f9f9f' />
-                      <Icon icon='sort-down' size={14} color='#9f9f9f' />
-                    </Fragment>
-                  )}
-                </span>
-              ) : null}
+              {isAscDescSort && tableTitleObj?.sortName && (
+                <div style={{ display: 'flex' }}>
+                  <Icon
+                    style={{ cursor: 'pointer' }}
+                    icon='sort-up'
+                    size={14}
+                    color={tableTitleObj?.isAscending === 'asc' ? '#717171' : '#9f9f9f'}
+                    onClick={() => sortFunction(tableTitleObj, 'asc')}
+                  />
+                  <Icon
+                    icon='sort-down'
+                    size={14}
+                    color={tableTitleObj?.isAscending === 'desc' ? '#717171' : '#9f9f9f'}
+                    onClick={() => sortFunction(tableTitleObj, 'desc')}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </div>
+              )}
             </div>
           </TableCell>
         ))}
@@ -89,10 +109,7 @@ const TableHeader = ({
             </div>
           </TableCell>
         )}
-        {collapse && (
-          <TableCell className={classes.tabCheck}>
-          </TableCell>
-        )}
+        {collapse && <TableCell className={classes.tabCheck}></TableCell>}
       </TableRow>
     </TableHead>
   )

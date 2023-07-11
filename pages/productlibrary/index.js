@@ -1,6 +1,13 @@
 import Layout from 'components/layout'
 import ProductFilter from 'components/pages/productLibrary/productFilter'
-import { Button, CircularProgress, Grid, Typography } from '@material-ui/core'
+import {
+  Button,
+  CircularProgress,
+  Grid,
+  Typography,
+  FormControlLabel,
+  Checkbox
+} from '@material-ui/core'
 import ProductLibraryCard from 'components/productLibraryCard'
 import Select from 'components/select'
 import { connect, useSelector } from 'react-redux'
@@ -12,7 +19,7 @@ import {
   updateProductLibraryQuery
 } from 'redux/actions/productLibraryActions'
 import Modal from 'components/modal'
-import { checkIfEmpty } from 'utils/helpers'
+import { checkIfEmpty, isActiveInternet } from 'utils/helpers'
 import AlertImg from '/static/images/alert-image.png'
 import NoStore from '/static/images/no-store-modal.png'
 import { useRouter } from 'next/router'
@@ -28,6 +35,8 @@ import { getProductLibraryDetail } from 'redux/actions/productLibraryActions'
 import { postProductToStore } from 'redux/actions/shopifyActions'
 import Pagination from 'components/pagination'
 import { getAllConnectedStores } from 'redux/actions/userStoreActions'
+import CheckIcon from '@material-ui/icons/Check'
+import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked'
 const useStyles = style
 
 /**
@@ -64,6 +73,8 @@ function ProductLibrary({
   const [disabled, setdisabled] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState({})
   const isSessionIdsFromShopify = useSelector((state) => state?.shopify?.shopifyAuth?.shop)
+  const [isCheck, setIsCheck] = useState([])
+  const [loaderMessage, setLoaderMessage] = useState()
 
   /**
    * handleClose
@@ -103,8 +114,7 @@ function ProductLibrary({
       callApiOnAllFilterChange({
         ...filterQuery,
         pageIndex: 0,
-        pageSize: 10,
-        searchKey: e.target.value ? e?.target?.value : filterQuery?.searchKey
+        searchKey: e?.target?.value
       })
     }
   }
@@ -228,48 +238,66 @@ function ProductLibrary({
    * @param {*} item
    */
   const handleMoreOptions = (status, item) => {
+    const variantDeletedMsg =
+      'Deleted variants are present in the order. Kindly remove them to proceed.'
     if (navigator.onLine) {
       switch (status) {
         case 1:
           handleNewOrder(item)
           break
         case 2:
-          setselected([item.productLibraryGuid])
-          if (isSessionIdsFromShopify) {
-            handleAddToStore(item)
+          if (item?.isProductVariantDeleted) {
+            NotificationManager.warning(variantDeletedMsg, '', 5000)
           } else {
-            setShowStoreList(true)
-            setStoreModalLoader(true)
-            setSelectedProduct(item)
+            setselected([item.productLibraryGuid])
+            if (isSessionIdsFromShopify) {
+              handleAddToStore(item)
+            } else {
+              setShowStoreList(true)
+              setStoreModalLoader(true)
+              setSelectedProduct(item)
+            }
           }
           break
         case 3: {
-          route.push({
-            pathname: '/designTool',
-            query: {
-              productLibraryId: item.productLibraryId,
-              productLibraryVariantId: 0,
-              mode: 'edit',
-              productName: item.productGuid,
-              designPanels: item.designPanels
-            }
-          })
+          if (item?.isProductVariantDeleted) {
+            NotificationManager.warning(variantDeletedMsg, '', 5000)
+          } else {
+            route.push({
+              pathname: '/designTool',
+              query: {
+                productLibraryId: item.productLibraryId,
+                productLibraryVariantId: 0,
+                mode: 'edit',
+                productName: item.productGuid,
+                designPanels: item.designPanels
+              }
+            })
+          }
           break
         }
         case 4:
+          // if (item?.isProductDeleted) {
+          //   route.push(`/productlibrary/${element?.productLibraryGuid}`)
+          // } else {
           route.push(`/productlibrary/${item?.productLibraryGuid}`)
+          // }
           break
         case 5: {
-          route.push({
-            pathname: '/designTool',
-            query: {
-              productLibraryId: item?.productLibraryId,
-              productLibraryVariantId: 0,
-              mode: 'duplicate',
-              productName: item?.productGuid,
-              designPanels: item.designPanels
-            }
-          })
+          if (item?.isProductVariantDeleted) {
+            NotificationManager.warning(variantDeletedMsg, '', 5000)
+          } else {
+            route.push({
+              pathname: '/designTool',
+              query: {
+                productLibraryId: item?.productLibraryId,
+                productLibraryVariantId: 0,
+                mode: 'duplicate',
+                productName: item?.productGuid,
+                designPanels: item.designPanels
+              }
+            })
+          }
           break
         }
         case 6:
@@ -296,6 +324,32 @@ function ProductLibrary({
         productId: item?.productLibraryGuid
       })
       route.push(`/orders/createOrder?productId=${item?.productLibraryGuid}`)
+    }
+  }
+
+  /**
+   * select all fields in checkbox
+   */
+  const selectAllField = (e) => {
+    if (e.target.checked) {
+      const allChecked = productLibrary?.items?.map((val) => val?.productLibraryId)
+      setIsCheck(allChecked)
+    } else {
+      setIsCheck([])
+    }
+  }
+
+  /**
+   * handle checkbox
+   */
+  const checkBoxHandler = (e, item) => {
+    setIsCheck()
+    const isSelected = isCheck?.includes(item?.productLibraryId)
+    if (isSelected) {
+      const valueUpdated = isCheck.filter((ele) => ele !== item?.productLibraryId)
+      setIsCheck(valueUpdated)
+    } else {
+      setIsCheck([...isCheck, item?.productLibraryId])
     }
   }
 
@@ -353,24 +407,41 @@ function ProductLibrary({
    */
   const handleAddToStore = async (item) => {
     if (navigator.onLine) {
-      if (item?.productLibraryId) {
+      if (item?.productLibraryId || isCheck.length > 0) {
+        let libraryItems = []
         let body = {
           storeId: selectedStore !== '' ? selectedStore : userDetails?.storeId,
-          productLibraryItems: [{ productLibraryId: item?.productLibraryId }]
+          productLibraryItems:
+            isCheck.length > 0
+              ? isCheck.map((ele) => {
+                  return { productLibraryId: ele }
+                })
+              : [{ productLibraryId: item?.productLibraryId }]
         }
         if (body) {
           showStoreList && setShowStoreList(false)
+          setLoaderMessage('Please wait.. The product is being added to the store..')
           setloader(true)
           const pushRes = await postProductToStore(body)
           if (200 <= pushRes.statusCode && pushRes.statusCode <= 300) {
             const res = await getAllProductLibrary(filterQuery)
-            NotificationManager.success(
-              'The product has been added to store successfully',
-              '',
-              2000
-            )
+            pushRes?.response?.isPartialPush
+              ? NotificationManager.warning(
+                  `One or more products couldn't be added to the store as it already exists.`,
+                  '',
+                  5000
+                )
+              : NotificationManager.success(
+                  `The product${
+                    isCheck.length > 1 ? 's' : ''
+                  } have been added to the queue. Please click on the 'View upload status' icon to check the status`,
+                  '',
+                  5000
+                )
             if (res?.statusCode === 200) {
               setloader(false)
+              setLoaderMessage('')
+              setIsCheck([])
             }
             setselected([])
             if (selectedStore !== '') {
@@ -379,9 +450,11 @@ function ProductLibrary({
           }
           if (pushRes?.StatusCode >= 400 && pushRes?.StatusCode <= 500) {
             setloader(false)
+            setLoaderMessage('')
             setStoreModalLoader(false)
             setShowStoreList(false)
             setSelectedStore('')
+            setIsCheck([])
             NotificationManager.error(
               pushRes?.Response?.Message
                 ? pushRes?.Response?.Message
@@ -408,17 +481,19 @@ function ProductLibrary({
     if (navigator?.onLine) {
       if (link === '/productlibrary') {
         setloader(true)
-        const res = await getAllProductLibrary(filterQuery)
+        const res = await getAllProductLibrary({
+          ...filterQuery,
+          pageIndex: 0
+        })
         res && setloader(false)
       }
     }
   }
-
   //HTML
   return (
     <div>
       <Layout className={classes.contentPdt} handleOnClick={rerenderPage}>
-        {loader && <Loader />}
+        {loader && <Loader message={loaderMessage} />}
         <div className={classes.productRow}>
           <div className={classes.bgFilter}>
             <ProductFilter
@@ -430,19 +505,21 @@ function ProductLibrary({
             />
           </div>
           {/* <!--hidden xs-->*/}
-          <ToggleDrawer
-            open={open}
-            handleClose={handleClose}
-            drawerClass={classes.Filter_Width}
-            component={
-              <ProductFilter
-                showCategory={false}
-                handleSearch={handleSearch}
-                apiCall={handleCallApi}
-                filterClose={handleClose}
-              />
-            }
-          />
+          {open && (
+            <ToggleDrawer
+              open={open}
+              handleClose={handleClose}
+              drawerClass={classes.Filter_Width}
+              component={
+                <ProductFilter
+                  showCategory={false}
+                  handleSearch={handleSearch}
+                  apiCall={handleCallApi}
+                  filterClose={handleClose}
+                />
+              }
+            />
+          )}
           {/* <!--hidden xs-->*/}
           <div className={classes.bgProductList}>
             {/* <!--new--> */}
@@ -451,6 +528,7 @@ function ProductLibrary({
                 <div className={classes.libraryLabel}>
                   <Typography variant='h3'>Product library</Typography>
                 </div>
+
                 <div className={classes.hiddenMdRoot}>
                   {/* <!--hidden xs--> */}
                   <div className={classes.hiddenOnlyXs} style={{ alignSelf: 'flex-end' }}>
@@ -458,7 +536,8 @@ function ProductLibrary({
                       variant='outlined'
                       onClick={() => setOpen(!open)}
                       startIcon={<Icon icon='filter-list' size={18} />}
-                      style={{ width: 145, background: '#fff' }}
+                      style={{ width: 145, background: '#fff', float: 'right' }}
+                      className={classes.float_Filter}
                     >
                       Filter
                     </Button>
@@ -466,6 +545,21 @@ function ProductLibrary({
                   {/* <!--hidden xs--> */}
 
                   <div className={classes.sortLibrary}>
+                    <div className={classes.bgCheck_Box}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            name='productLibraryAddToStore'
+                            checkedIcon={<CheckIcon fontSize='medium' />}
+                            icon={<RadioButtonUncheckedIcon color='primary' />}
+                            onChange={selectAllField}
+                            checked={isCheck.length === productLibrary?.items?.length}
+                          />
+                        }
+                        label={<div className={classes.checkedLabel}>Select all</div>}
+                      />
+                    </div>
+
                     <div className={classes.recentSelect}>
                       <Select
                         selectedValue={filterQuery?.sortColumn}
@@ -492,6 +586,52 @@ function ProductLibrary({
                     >
                       Create product
                     </Button>
+                    <Button
+                      variant='contained'
+                      className={classes.multipleAddStoreBtn}
+                      onClick={() => {
+                        const deletedProduct = (element) =>
+                          element.isProductDeleted && isCheck.includes(element.productLibraryId)
+                        const deletedProductVariant = (element) =>
+                          element.isProductVariantDeleted &&
+                          isCheck.includes(element.productLibraryId)
+                        if (productLibrary?.items?.some(deletedProduct)) {
+                          NotificationManager.warning(
+                            'One or more product has been discontinued from the product catalog',
+                            '',
+                            5000
+                          )
+                        } else if (productLibrary?.items?.some(deletedProductVariant)) {
+                          NotificationManager.warning(
+                            'Deleted variants are present in the order. Kindly remove them to proceed.',
+                            '',
+                            5000
+                          )
+                        } else {
+                          if (userDetails?.isLoginFromShopify) {
+                            setSelectedStore(userDetails?.storeId)
+                            handleAddToStore(selectedProduct)
+                          } else {
+                            setShowStoreList(true)
+                            setStoreModalLoader(true)
+                          }
+                        }
+                      }}
+                      disabled={isCheck.length ? false : true}
+                    >
+                      Add to store
+                    </Button>
+                    <Button
+                      title='View upload status'
+                      type='submit'
+                      variant='outlined'
+                      startIcon={<Icon icon='upload-icon' size={18} />}
+                      className={classes.btn_Store}
+                      style={{ background: '#fff' }}
+                      onClick={() => isActiveInternet(route, '/store/uploads')}
+                    >
+                      View upload status
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -499,9 +639,11 @@ function ProductLibrary({
               {productLibrary?.items?.map((value) => (
                 <ProductLibraryCard
                   item={value}
+                  isCheck={isCheck}
                   handleMoreOptions={(status) => handleMoreOptions(status, value)}
                   handleSelectChange={handleSelectChange}
                   selected={selected?.filter((val) => val === value?.productLibraryGuid)}
+                  checkBoxHandler={checkBoxHandler}
                 />
               ))}
               {!checkIfEmpty(productLibrary?.items) && (
@@ -620,7 +762,12 @@ function ProductLibrary({
                     }}
                   />
                   <div className={classes.btnActions} style={{ marginTop: 16 }}>
-                    <Button className={classes.btnCancel} onClick={() => setShowStoreList(false)}>
+                    <Button
+                      className={classes.btnCancel}
+                      onClick={() => {
+                        setShowStoreList(false)
+                      }}
+                    >
                       Cancel
                     </Button>
                     <Button

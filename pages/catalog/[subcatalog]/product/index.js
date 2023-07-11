@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import ProductFilter from 'components/pages/product/productFilter'
 import ProductList from 'components/pages/product/productList'
 import { getAllProducts, updateProductQuery } from 'redux/actions/productActions'
+import { getAllCategory } from 'redux/actions/categoryActions'
 import Layout from 'components/layout'
 import Pagination from 'components/pagination'
 import { connect } from 'react-redux'
@@ -12,7 +13,13 @@ import Loader from 'components/loader'
 import { useRouter } from 'next/router'
 const useStyles = style
 
-const Product = ({ getAllProducts, products, productListQuery, updateProductQuery }) => {
+const Product = ({
+  getAllProducts,
+  getAllCategory,
+  products,
+  productListQuery,
+  updateProductQuery
+}) => {
   const classes = useStyles()
   const [open, setOpen] = useState(false)
   const route = useRouter()
@@ -24,6 +31,7 @@ const Product = ({ getAllProducts, products, productListQuery, updateProductQuer
    * get call
    */
   useEffect(async () => {
+    getAllCategory()
     const {
       query: { isGlobalSearch }
     } = route
@@ -136,7 +144,6 @@ const Product = ({ getAllProducts, products, productListQuery, updateProductQuer
             setSortOpen={setSortOpen}
             apiQuery={productListQuery}
           />
-
           {!checkIfEmpty(products?.response?.items) && (
             <Pagination
               pageSize={productListQuery?.pageSize}
@@ -166,7 +173,8 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   getAllProducts,
-  updateProductQuery
+  updateProductQuery,
+  getAllCategory
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Product)

@@ -50,7 +50,8 @@ export const addEditProductToCanvas = (json, canvas, design, addPatterns, callBa
           undefined,
           design.layers,
           'edit',
-          finalPatternAdded
+          finalPatternAdded,
+          true
         )
       }
     }

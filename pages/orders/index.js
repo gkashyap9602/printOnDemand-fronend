@@ -11,6 +11,8 @@ import { TABLE_TITLES } from 'constants/tableValue'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { connect } from 'react-redux'
+import { usePrevious } from 'utils/hooks'
+
 import {
   bulkOrderImport,
   cancelOrders,
@@ -62,6 +64,8 @@ function Orders({
   const route = useRouter()
   const [currentTab, setcurrentTab] = useState({})
   const [tableLoader, settableLoader] = useState(false)
+  const previousQuery = usePrevious(orderQuery)
+  const [isCheck, setIsCheck] = useState([])
 
   /**
    * Fetch all orders
@@ -106,22 +110,31 @@ function Orders({
    * fetch order sample template
    */
   useEffect(async () => {
-    let storeList = []
-    if (orderQuery.storeIds && orderQuery.storeIds.length && orderQuery.storeIds.length > 0) {
-      orderQuery.storeIds.map((store) => (storeList = [...storeList, store.value]))
+    if (JSON.stringify(previousQuery) !== JSON.stringify(orderQuery)) {
+      let storeList = []
+      if (orderQuery.storeIds && orderQuery.storeIds.length && orderQuery.storeIds.length > 0) {
+        orderQuery.storeIds.map((store) => (storeList = [...storeList, store.value]))
+      }
+      const newValues = {
+        ...orderQuery,
+        customerId: orderQuery?.customerId ? orderQuery?.customerId : userDetails?.customerGuid,
+        storeIds: storeList
+      }
+      if (orderQuery?.customerId) {
+        fetchOrderTemplate()
+        await fetchAllOrders(newValues)
+      }
+      setloader(false)
+      settableLoader(false)
     }
-    const newValues = {
-      ...orderQuery,
-      customerId: orderQuery?.customerId ? orderQuery?.customerId : userDetails?.customerGuid,
-      storeIds: storeList
-    }
-    if (newValues?.customerId) {
-      fetchOrderTemplate()
-      await fetchAllOrders(newValues)
-    }
-    setloader(false)
-    settableLoader(false)
   }, [orderQuery, userDetails])
+
+  /**
+   * Reset checkbox when page index changed
+   */
+  useEffect(() => {
+    setIsCheck([])
+  }, [orderQuery?.pageIndex])
 
   /**
    * Handle all no network scenarios
@@ -182,23 +195,23 @@ function Orders({
    * sortFunction
    * @param {*} titleObj
    */
-  const sortFunction = async (titleObj) => {
+  const sortFunction = async (titleObj, key) => {
     if (navigator.onLine) {
       await settableLoader(true)
       const newTitleObj = await tableTitles.map((obj) => {
-        if (obj.id === titleObj.id || obj.isAscending) {
+        if (obj.id === titleObj.id) {
           return {
             ...obj,
-            isAscending: !obj.isAscending
+            isAscending: key
           }
         }
-        return obj
+        return { ...obj, isAscending: false }
       })
       setTableTitles(newTitleObj)
       updateOrderQuery({
         ...orderQuery,
         sortColumn: titleObj.sortName,
-        sortDirection: titleObj.isAscending ? 'desc' : 'asc',
+        sortDirection: key,
         sortId: titleObj.id
       })
       await setIsSort(titleObj.id)
@@ -227,44 +240,48 @@ function Orders({
    */
   const handleStatusChange = async (status, item) => {
     if (navigator.onLine) {
-      if (status === 3) {
-        const res = await downloadXlsxFile({
-          orderGuid: item?.guid
-        })
-        if (res?.statusCode >= 200 && res?.statusCode <= 300 && res?.response) {
-          const {
-            response: { fileContents }
-          } = res
-          if (fileContents) {
-            getBase64(fileContents, item?.displayId)
-          }
-        }
-        if (
-          (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res?.hasError) &&
-          res?.StatusCode !== 401
-        ) {
-          NotificationManager.error(
-            res?.Response?.Message
-              ? res?.Response?.Message
-              : 'Something went wrong, please refresh the page',
-            '',
-            10000
-          )
-        }
-      } else {
-        switch (status) {
-          case 1:
-            route.push(`/orders/${item.guid}`)
-            break
-          case 2:
-            setdata(orders?.orders?.find((val) => val?.guid === item?.guid))
-            settoggleModal(true)
-          default:
-            break
-        }
+      switch (status) {
+        case 1:
+          route.push(`/orders/${item.guid}`)
+          break
+        case 2:
+          setdata(orders?.orders?.find((val) => val?.guid === item?.guid))
+          settoggleModal(true)
+        default:
+          break
       }
     } else {
       handleNonetwork()
+    }
+  }
+
+  const handleDownload = async () => {
+    NotificationManager.warning('The order(s) will be downloaded shortly', '', 2000)
+    const res = await downloadXlsxFile({
+      orderGuids: isCheck,
+      timeZoneOffset: new Date().getTimezoneOffset() * -1
+    })
+    if (res?.statusCode >= 200 && res?.statusCode <= 300 && res?.response) {
+      const {
+        response: { fileContents }
+      } = res
+      setIsCheck([])
+
+      if (fileContents) {
+        getBase64(fileContents)
+      }
+    }
+    if (
+      (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res?.hasError) &&
+      res?.StatusCode !== 401
+    ) {
+      NotificationManager.error(
+        res?.Response?.Message
+          ? res?.Response?.Message
+          : 'Something went wrong, please refresh the page',
+        '',
+        10000
+      )
     }
   }
 
@@ -285,7 +302,7 @@ function Orders({
    * @param {*} file
    * @returns
    */
-  function getBase64(file, fileName = false) {
+  function getBase64(file) {
     return new Promise((resolve, reject) => {
       var blob = new Blob([s2ab(atob(file))], {
         type: ''
@@ -293,7 +310,11 @@ function Orders({
       let objectURL = window.URL.createObjectURL(blob)
       let anchor = document.createElement('a')
       anchor.href = objectURL
-      anchor.download = fileName ? `${fileName}.xlsx` : 'excel.xlsx'
+      const today = moment().format('YYYY-MMM-DD hh:mm A')
+      anchor.download =
+        isCheck.length === 1
+          ? orders?.orders?.filter((ele) => ele.guid === isCheck[0])[0]?.displayId + '.xlsx'
+          : `Order-${today}.xlsx`
       anchor.click()
     })
   }
@@ -321,6 +342,40 @@ function Orders({
       })
     } else {
       handleNonetwork()
+    }
+  }
+
+  /**
+   * handle checkbox
+   */
+  const checkBoxHandler = (e, list) => {
+    if (list?.source === 5) {
+      NotificationManager.warning('Not possible to select bulk orders', '', 2000)
+    } else {
+      const isSelected = isCheck?.includes(list.guid)
+      if (isSelected) {
+        const valueUpdated = isCheck.filter((item) => item !== list.guid)
+        setIsCheck(valueUpdated)
+      } else {
+        setIsCheck([...isCheck, list.guid])
+      }
+    }
+  }
+
+  /**
+   * select all fields in checkbox except bulk orders
+   */
+  const selectAllField = (e) => {
+    if (e.target.checked) {
+      // const allChecked = orders?.orders?.map((item) => item?.guid)
+
+      //Select orders except bulk orders
+      const allChecked = orders?.orders
+        ?.filter((ele) => ele.source !== 5)
+        ?.map((item) => item?.guid)
+      setIsCheck(allChecked)
+    } else {
+      setIsCheck([])
     }
   }
 
@@ -359,11 +414,22 @@ function Orders({
             <div className={classes.filterArea}>
               <div className={classes.searchFilter}>
                 {delay && <PushDelay handleClose={() => setdelay(!delay)} />}
+                <Button
+                  type='submit'
+                  startIcon={<Icon icon='file_download' size={18} />}
+                  onClick={handleDownload}
+                  variant='contained'
+                  disabled={isCheck.length === 0}
+                  style={{ marginRight: 8 }}
+                  className={classes.download_Btn_Filt}
+                >
+                  Download
+                </Button>
                 <SearchArea
                   placeholder='Search'
                   handleSearch={handleSearch}
                   className={classes.searchOrder}
-                  searchValue={orderQuery.searchKey ? orderQuery.searchKey : ''}
+                  searchValue={orderQuery.searchKey ? orderQuery.searchKey : null}
                 />
                 <div className={clsx(classes.order_Btn, classes.order_Delay)}>
                   <Button
@@ -444,6 +510,7 @@ function Orders({
             <DataTable
               sortFunction={sortFunction}
               tableTitles={tableTitles}
+              isAscDescSort={true}
               lists={orders?.orders?.map((val) =>
                 val?.source === 5 ? { ...val, displayId: `${val?.displayId} *` } : val
               )}
@@ -452,7 +519,6 @@ function Orders({
               statusChanger={handleStatusChange}
               options={[
                 { status: 1, label: 'View', icon: 'eye-show', key: 'edit' },
-                { status: 3, label: 'Download', icon: 'file_download', key: 'download' },
                 currentTab?.key !== 5 && {
                   status: 2,
                   key: 'cancelled',
@@ -461,6 +527,11 @@ function Orders({
                 }
               ]}
               isSort={isSort}
+              isCheck={isCheck}
+              isExtraFieldReq={true}
+              PageId={'order_page'}
+              checkBoxHandler={checkBoxHandler}
+              selectAllField={selectAllField}
             />
             {orders && orders.totalCount ? (
               <>
@@ -541,7 +612,7 @@ function Orders({
             </Grid>
             <Grid item xs={12} sm={12} md={4} lg={4} xl={4}>
               <Typography variant='h4' className={classes.orderLabel}>
-                Order #
+                Merch maker #
               </Typography>
               <Typography variant='body2' className={classes.orderContent}>
                 {data?.displayId || '---'}

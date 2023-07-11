@@ -276,13 +276,14 @@ export const BASIC_INFO = [
     label: 'First name',
     name: 'firstName',
     type: 'text',
+    asterick: true,
     placeholder: 'Enter first name',
     isRequired: true,
     // tabIndex: 1,
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     }
@@ -290,6 +291,7 @@ export const BASIC_INFO = [
   {
     label: 'Last name',
     name: 'lastName',
+    asterick: true,
     type: 'text',
     placeholder: 'Enter last name',
     isRequired: true,
@@ -297,7 +299,7 @@ export const BASIC_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     }
@@ -306,6 +308,7 @@ export const BASIC_INFO = [
     label: 'Email',
     name: 'email',
     type: 'text',
+    asterick: true,
     // tabIndex: 3,
     iconProps: {
       icon: 'email',
@@ -339,7 +342,7 @@ export const SHIPPING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     }
@@ -357,7 +360,7 @@ export const SHIPPING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     }
@@ -412,7 +415,7 @@ export const SHIPPING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -433,7 +436,7 @@ export const SHIPPING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -455,7 +458,7 @@ export const SHIPPING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -534,7 +537,7 @@ export const BILLING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     },
@@ -551,7 +554,7 @@ export const BILLING_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     },
@@ -643,6 +646,7 @@ export const PAYMENT_INFO = [
   {
     label: 'Name on card',
     name: 'name',
+    id: 'name',
     type: 'text',
     placeholder: 'Enter name',
     isRequired: true,
@@ -690,7 +694,7 @@ export const PAYMENT_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     },
@@ -719,7 +723,7 @@ export const PAYMENT_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 6,
+      md: 12,
       lg: 6,
       xl: 6
     },
@@ -835,7 +839,7 @@ export const CARD_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -856,7 +860,7 @@ export const CARD_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -878,7 +882,7 @@ export const CARD_INFO = [
     size: {
       xs: 12,
       sm: 12,
-      md: 4,
+      md: 12,
       lg: 4,
       xl: 4
     },
@@ -1494,14 +1498,17 @@ export const OrderDetailsTab = [
 ]
 
 export const ORDER_INFORMATION = [
-  { label: 'MWW order#', name: 'mwwOrderId' },
+  { label: 'Order ID', name: 'mwwOrderId' },
   { label: 'Customer name', name: 'customerName' },
   { label: 'Email', name: 'shippingAddress.companyEmail' },
   { label: 'Phone', name: 'shippingAddress.contactPhone' },
   { label: 'Order date', name: 'orderDate', type: 'date' },
   { label: 'Shipping method', name: 'shippingMethodName' },
   { label: 'Shipping account number', name: 'shippingAccountNumber' },
-  { label: 'Tracking number', name: 'trackingNumbers' }
+  { label: 'Tracking number', name: 'trackingNumbers' },
+  { label: 'IOSS', name: 'ioss' }
+  // { label: 'Custom packing slips', name: 'receipt' },
+  // { label: 'Custom preship labels', name: 'preship' }
 ]
 export const SHPPING_INFORMATION = [
   { label: 'Shipping address', name: 'shippingAddress' },
@@ -1871,7 +1878,7 @@ export const BILLING_ADDRESS = [
 export const storeUploadsTab = [
   {
     id: 1,
-    name: 'total',
+    name: 'totalCount',
     icon: 'orders-tab',
     color: '#75ca9e',
     count: 0,
@@ -1895,7 +1902,7 @@ export const storeUploadsTab = [
     statusId: 3,
     activeIcon: 'orders-pending-active',
     bgActive: '#59abff',
-    text: 'retry',
+    text: 'processing',
     userBG: '#fcb357'
   },
   {
@@ -1908,8 +1915,8 @@ export const storeUploadsTab = [
     status: 'Failed',
     statusId: 2,
     activeIcon: 'orders-error-active',
-    bgActive: '#a39e9e',
-    text: 'Deactivated',
+    bgActive: '#fb413f',
+    text: 'failed',
     userBG: '#fb413f'
   },
   {
@@ -1917,12 +1924,12 @@ export const storeUploadsTab = [
     name: 'completed',
     key: 3,
     icon: 'store-complete',
-    color: '#fb413f',
+    color: '#8e5ffe',
     count: 0,
     status: 'Completed',
     statusId: 4,
-    activeIcon: 'orders-error-active',
-    bgActive: '#fb413f',
+    activeIcon: 'store-complete',
+    bgActive: '#8e5ffe',
     text: '',
     userBG: ''
   }
@@ -1946,6 +1953,7 @@ export const SHIPPING_INFO_ADMIN = [
       xl: 6
     }
   },
+
   {
     label: 'Contact name',
     name: 'contactName',
@@ -1997,7 +2005,7 @@ export const SHIPPING_INFO_ADMIN = [
       lg: 12,
       xl: 12
     },
-    placeholder: 'Enter address (Optional)',
+    placeholder: 'Enter address ',
     isRequired: false
     //   tabIndex: 10,
   },
@@ -2140,7 +2148,23 @@ export const SHIPPING_INFO_ADMIN = [
     isRequired: true
   }
 ]
-
+export const NC_FIELD_ADMIN = {
+  label: 'NC sales and tax registration number',
+  name: 'NCResaleCertificate',
+  type: 'text',
+  iconProps: {
+    icon: ''
+  },
+  size: {
+    xs: 12,
+    sm: 12,
+    md: 12,
+    lg: 12,
+    xl: 12
+  },
+  placeholder: 'Enter the tax registration number',
+  isRequired: false
+}
 export const BILLING_INFO_ADMIN = [
   {
     label: 'Company name',
@@ -2211,7 +2235,7 @@ export const BILLING_INFO_ADMIN = [
       lg: 12,
       xl: 12
     },
-    placeholder: 'Enter address (Optional)',
+    placeholder: 'Enter address',
     isRequired: false
     //   tabIndex: 10,
   },
@@ -2459,4 +2483,34 @@ export const CARD_INFO_ADMIN = [
     isRequired: true,
     checkIfNumber: false
   }
+]
+export const EU_UK_COUNTRIES = [
+  { id: 146, name: 'AT - Austria', code: 'AT' },
+  { id: 153, name: 'BE - Belgium', code: 'BE' },
+  { id: 111, name: 'BG - Bulgaria', code: 'BG' },
+  { id: 159, name: 'HR - Croatia', code: 'HR' },
+  { id: 185, name: 'CY - Cyprus', code: 'CY' },
+  { id: 160, name: 'CZ - Czech Republic', code: 'CZ' },
+  { id: 188, name: 'DK - Denmark', code: 'DK' },
+  { id: 197, name: 'EE - Estonia', code: 'EE' },
+  { id: 202, name: 'FI - Finland', code: 'FI' },
+  { id: 203, name: 'FR - France', code: 'FR' },
+  { id: 209, name: 'DE - Germany', code: 'DE' },
+  { id: 198, name: 'GR - Greece', code: 'GR' },
+  { id: 170, name: 'HU - Hungary', code: 'HU' },
+  { id: 176, name: 'IE - Ireland', code: 'IE' },
+  { id: 178, name: 'IT - Italy', code: 'IT' },
+  { id: 27, name: 'LV - Latvia', code: 'LV' },
+  { id: 33, name: 'LT - Lithuania', code: 'LT' },
+  { id: 34, name: 'LU - Luxembourg', code: 'LU' },
+  { id: 42, name: 'MT - Malta', code: 'MT' },
+  { id: 5, name: 'NL - Netherlands', code: 'NL' },
+  { id: 22, name: 'PL - Poland', code: 'PL' },
+  { id: 26, name: 'PT - Portugal', code: 'PT' },
+  { id: 81, name: 'RO - Romania', code: 'RO' },
+  { id: 98, name: 'SK - Slovakia', code: 'SK' },
+  { id: 99, name: 'SI - Slovenia', code: 'SI' },
+  { id: 80, name: 'ES - Spain', code: 'ES' },
+  { id: 56, name: 'SE - Sweden', code: 'SE' },
+  { id: 107, name: 'UK - United Kingdom', code: 'GB' }
 ]

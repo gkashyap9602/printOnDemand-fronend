@@ -4,6 +4,7 @@ import DataTable from 'components/dataTable'
 import { TABLE_TITLES } from 'constants/tableValue'
 import style from '../../product/productDetails/style'
 import { Button, Typography } from '@material-ui/core'
+import { NotificationManager } from 'react-notifications'
 
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -21,7 +22,9 @@ const SizeSelect = ({ setSection, onClose, productVariants, isCheck, setIsCheck 
   }
   const selectAllField = (e) => {
     if (e.target.checked) {
-      const allChecked = productVariants.map((item) => item?.guid)
+      const allChecked = productVariants
+        .map((val) => val?.designerAvailable && val?.guid)
+        ?.filter((v) => v)
       setIsCheck(allChecked)
     } else {
       setIsCheck([])
@@ -61,6 +64,7 @@ const SizeSelect = ({ setSection, onClose, productVariants, isCheck, setIsCheck 
         tableTitles={TABLE_TITLES.PRODUCT_SIZE}
         lists={productVariants}
         className={classes.tablePad}
+        PageId={'dtool_page'}
       />
       <div
         style={{

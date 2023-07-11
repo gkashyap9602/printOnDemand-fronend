@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Field, formValueSelector, reduxForm, change as changeFieldValue } from 'redux-form'
-import { connect } from 'react-redux'
+import { connect, useSelector } from 'react-redux'
 import { SHIPPING_ADDRESS } from 'constants/fields'
 import { Button, Checkbox, FormControlLabel, Grid } from '@material-ui/core'
 import TextInput from 'components/TextInput'
 import { NotificationManager } from 'react-notifications'
 import style from '../style'
-import { validateFields } from 'utils/helpers'
+import { selectFieldFormat, validateFields } from 'utils/helpers'
 import { fetchOrderDetails, updateAddresses, updateShippingInfo } from 'redux/actions/orderActions'
 import CheckIcon from '@material-ui/icons/Check'
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked'
@@ -57,14 +57,51 @@ let ShippingForm = ({
   const [check, setcheck] = useState(isChecked)
   const route = useRouter()
   const [currentValue, setCurrentValue] = useState({ country: '', stateName: '' })
+  const states = useSelector((state) => state?.user?.stateList?.response)
+  const countries = useSelector((state) => state?.user?.countryList?.response)
 
   /**
-   * useEffect
+   * Set country options in the required format
    */
-  useEffect(() => {
-    getCountryList()
-    setcheck(isChecked)
-  }, [])
+  useEffect(async () => {
+    if (shippingAddress?.country === 'US') {
+      setshippingForm(
+        shippingForm?.map((v) =>
+          v?.name === 'stateName'
+            ? {
+                ...v,
+                type: 'select',
+                options: v?.name === 'stateName' && selectFieldFormat(states)
+              }
+            : v?.name === 'country'
+            ? {
+                ...v,
+                type: 'select',
+                options: v?.name === 'country' && selectFieldFormat(countries)
+              }
+            : v
+        )
+      )
+    } else {
+      setshippingForm(
+        shippingForm?.map((v) =>
+          v?.name === 'stateName'
+            ? {
+                ...v,
+                type: 'text',
+                options: []
+              }
+            : v?.name === 'country'
+            ? {
+                ...v,
+                type: 'select',
+                options: v?.name === 'country' && selectFieldFormat(countries)
+              }
+            : v
+        )
+      )
+    }
+  }, [shippingAddress && countries && states])
 
   /**
    * useEffect
@@ -79,101 +116,41 @@ let ShippingForm = ({
       }
     }
   }, [shippingAddress && countryList])
-
   /**
-   * selectFieldFormat
-   * @param {*} list
-   * @returns
+   * handle onchange function of fields
+   * @param {*} field
+   * @param {*} value
    */
-  const selectFieldFormat = (list) => {
-    return list.map(({ id, name, code }) => ({
-      id,
-      label: name,
-      value: code
-    }))
+  const onHandleChange = async (field, value) => {
+    if (field?.name === 'country' && value === 'US') {
+      UpdateFormField('stateName', states)
+      changeFieldValue('ShippingInfoForm', 'stateName', null)
+      setCurrentValue({ ...currentValue, stateName: null })
+    } else if (field?.name === 'country' && value !== 'US') {
+      await UpdateFormField('stateName', [], 'text')
+      await changeFieldValue('ShippingInfoForm', 'stateName', '')
+    }
   }
 
   /**
-   * countryList
+   * Updating form fields
+   * @param {*} key
+   * @param {*} options
+   * @param {*} type
    */
-  useEffect(() => {
-    if (countryList?.response?.length) {
-      const options = selectFieldFormat(countryList?.response)
-      const newFormsList = [
-        ...shippingForm?.map((formInfo) => {
-          if (formInfo.name === 'country') {
-            return {
-              ...formInfo,
-              options
+  const UpdateFormField = (key, options, type = 'select') => {
+    setshippingForm(
+      shippingForm?.map((v) =>
+        v?.name === key
+          ? {
+              ...v,
+              type: type,
+              options: selectFieldFormat(options)
             }
-          }
-          return { ...formInfo }
-        })
-      ]
-      setshippingForm(newFormsList)
-    }
-  }, [countryList])
-
-  /**
-   * fetchStateList
-   * @param {*} code
-   * @returns
-   */
-  const fetchStateList = async (code) => {
-    const data = await getStateList(code)
-    if (data?.response) {
-      return selectFieldFormat(data?.response)
-    }
-  }
-
-  const previousContry = usePrevious(country)
-
-  /**
-   * useEffect
-   */
-  useEffect(async () => {
-    const countryIsSelectable = shippingForm.filter(
-      (formInfo) => formInfo.name === 'country' && formInfo.options?.length
+          : v
+      )
     )
-    let newFormsList
-    if (countryIsSelectable?.length) {
-      if (country === 'US') {
-        if (shippingAddress?.country !== 'US') {
-          changeFieldValue('ShippingInfoForm', 'stateName', '')
-        }
-        const options = await fetchStateList(country)
-        newFormsList = [
-          ...shippingForm?.map((info) => {
-            if (info.name === 'stateName') {
-              return {
-                ...info,
-                type: 'select',
-                options
-              }
-            }
-            return { ...info }
-          })
-        ]
-        setshippingForm(newFormsList)
-      } else if (country !== 'US' && previousContry && country && previousContry !== country) {
-        newFormsList = [
-          ...shippingForm?.map((info) => {
-            if (info.name === 'stateName') {
-              return {
-                ...info,
-                type: 'text',
-                options: []
-              }
-            }
-            return { ...info }
-          })
-        ]
-        setshippingForm(newFormsList)
-        changeFieldValue('ShippingInfoForm', 'stateName', '')
-      }
-    }
-  }, [country])
-
+  }
   /**
    * Set values to fields
    */
@@ -314,6 +291,7 @@ let ShippingForm = ({
                 id={field?.name}
                 placeholder={field?.placeholder}
                 name={field?.name}
+                onChange={(value) => onHandleChange(field, value)}
                 helperText={errors?.[field?.name]}
                 type={field?.type || 'text'}
                 component={field?.type === 'select' ? Select : TextInput}

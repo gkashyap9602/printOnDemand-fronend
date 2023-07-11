@@ -1,4 +1,41 @@
 export const TABLE_TITLES = {
+  ADMIN_LOG: [
+    {
+      id: 1,
+      name: 'Email',
+      apiName: 'email',
+      headerClassName: true,
+      sortName: '',
+      isAscending: false,
+      isShippingValue: true,
+      shippingAPIname: 'email',
+      isCheckBox: false
+    },
+    {
+      id: 2,
+      name: 'Description',
+      headerClassName: true,
+
+      apiName: 'description'
+    },
+    {
+      id: 3,
+      name: 'Module',
+      apiName: 'appEntityType'
+    },
+    {
+      id: 4,
+      name: 'Action type',
+      apiName: 'actionType'
+    },
+    {
+      id: 5,
+      name: 'Action date',
+      apiName: 'createdOn',
+      sortName: 'createdOn',
+      type: 'date'
+    }
+  ],
   CUSTOMER_LIST_TABLE_TITLE: [
     {
       id: 7,
@@ -54,7 +91,7 @@ export const TABLE_TITLES = {
       apiName: 'createdOn',
       sortName: 'createdOn',
       type: 'dateWithoutTime',
-      isAscending: true,
+      isAscending: 'desc',
       isCheckBox: false,
       lgWidth: true
     },
@@ -255,15 +292,16 @@ export const TABLE_TITLES = {
   ORDER_LIST: [
     {
       id: 1,
-      name: 'Order #',
+      name: 'Merch maker #',
       apiName: 'displayId',
       sortName: 'displayId',
       isAscending: true,
-      isCheckBox: false
+      isCheckBox: false,
+      headerClassName: true
     },
     {
       id: 2,
-      name: 'MWW order #',
+      name: 'Order ID',
       apiName: 'mwwOrderId',
       sortName: 'mwwOrderId',
       isAscending: true,
@@ -293,7 +331,7 @@ export const TABLE_TITLES = {
       name: 'Order date',
       apiName: 'orderDate',
       sortName: 'orderDate',
-      isAscending: false,
+      isAscending: 'desc',
       type: 'date',
       isCheckBox: false,
       lgWidth: true
@@ -340,7 +378,7 @@ export const TABLE_TITLES = {
       apiName: 'uploadDate',
       sortName: 'uploadDate',
       type: 'date',
-      isAscending: false,
+      isAscending: 'desc',
       isCheckBox: false
     },
     {
@@ -356,7 +394,7 @@ export const TABLE_TITLES = {
   ADMIN_ORDER_LIST: [
     {
       id: 1,
-      name: 'Order #',
+      name: 'Merch maker #',
       apiName: 'displayId',
       sortName: 'displayId',
       isAscending: true,
@@ -364,7 +402,7 @@ export const TABLE_TITLES = {
     },
     {
       id: 2,
-      name: 'MWW order #',
+      name: 'Order ID ',
       apiName: 'mwwOrderId',
       sortName: 'mwwOrderId',
       isAscending: true,
@@ -394,7 +432,7 @@ export const TABLE_TITLES = {
       name: 'Order date',
       apiName: 'orderDate',
       sortName: 'orderDate',
-      isAscending: false,
+      isAscending: 'desc',
       type: 'date',
       isCheckBox: false,
       lgWidth: true

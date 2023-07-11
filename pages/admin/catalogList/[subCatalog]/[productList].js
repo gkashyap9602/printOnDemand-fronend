@@ -83,25 +83,27 @@ const ProductList = ({
    * Fetch all products
    */
   useEffect(async () => {
-    let res
-    if (param?.categoryFilter && !param?.searchKey) {
-      res = await getAllProducts(param)
-    }
-    if (param?.searchKey) {
-      const delayDebounceFn = setTimeout(async () => {
+    if (loader) {
+      let res
+      if (param?.categoryFilter && !param?.searchKey) {
         res = await getAllProducts(param)
+      }
+      if (param?.searchKey) {
+        const delayDebounceFn = setTimeout(async () => {
+          res = await getAllProducts(param)
+          if (res?.StatusCode >= 400 && res?.StatusCode <= 500 && res?.StatusCode !== 401) {
+            setLoader(false)
+            NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
+          }
+        }, 500)
+
+        return () => clearTimeout(delayDebounceFn)
+      }
+      if (res) {
         if (res?.StatusCode >= 400 && res?.StatusCode <= 500 && res?.StatusCode !== 401) {
           setLoader(false)
           NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
         }
-      }, 500)
-
-      return () => clearTimeout(delayDebounceFn)
-    }
-    if (res) {
-      if (res?.StatusCode >= 400 && res?.StatusCode <= 500 && res?.StatusCode !== 401) {
-        setLoader(false)
-        NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
       }
     }
   }, [param, loader])

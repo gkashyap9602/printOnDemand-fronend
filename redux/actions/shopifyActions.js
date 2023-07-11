@@ -10,7 +10,7 @@ export const setShopifyAccessData = (payload) => {
 
 export const postProductToStore = (data) => {
   const fetchOptions = {
-    url: `api/ProductLibrary/pushtostore`,
+    url: `api/ProductLibrary/pushtostorequeue`,
     method: 'POST',
     actionType: SHOPIFY.POST_PRODUCT_TO_SHOPIFY,
     body: JSON.stringify(data),

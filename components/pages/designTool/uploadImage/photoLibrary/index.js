@@ -54,9 +54,7 @@ const PhotoLibrary = ({ setModalClose, showLoader }) => {
       <div>
         <div className={classes.library_Search}>
           <div style={{ margin: '20px 0 20px 0' }}>
-            <Typography variant='h4'>{`${
-              design.uploadedImages.length + photoLibraryImages.length
-            } image available`}</Typography>
+            <Typography variant='h4'>{`${photoLibraryImages.length} image available`}</Typography>
           </div>
         </div>
 

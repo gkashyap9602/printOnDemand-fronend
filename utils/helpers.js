@@ -179,6 +179,39 @@ export const daysBtwDate = (date_1, date_2) => {
   let TotalDays = Math.ceil(difference / (1000 * 3600 * 24))
   return TotalDays
 }
+export const checkifValidUrl = (URL) => {
+  if (!checkIfEmpty(URL)) {
+    var res = URL.match(
+      /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
+    )
+    if (res == null) return false
+    else return true
+  }
+}
+export const hasWhiteSpace = (s) => {
+  return /\s/g.test(s)
+}
+
+export const validateDecimal = (val) => {
+  const isNumber = /^\d*\.?\d*$/.test(val)
+  if (isNumber) {
+    if (`${val}`?.includes('.')) {
+      return `${val?.split?.('.')?.[0]?.slice(0, 4)}.${
+        val?.split?.('.')[1]?.length > 2 ? val?.split?.('.')?.[1].slice(0, 2) : val?.split('.')?.[1]
+      }`
+    } else if (!val?.includes('.')) {
+      return val?.split?.('.')?.[0]?.slice(0, 4)
+    }
+  } else {
+    const res = val?.replace(/[^0-9.]/g, '')
+    return countInstances(`${val}`, '.') > 1
+      ? parseFloat(res)?.toFixed(2)
+      : val?.replace(/[^0-9.]/g, '')
+  }
+}
+function countInstances(string, word) {
+  return string?.split(word)?.length - 1
+}
 
 /**
  * getBase64
@@ -287,5 +320,60 @@ export const isShopifyApp = () => {
     return window.self !== window.top
   } catch (e) {
     return true
+  }
+}
+
+export const getEntityName = (key) => {
+  switch (key) {
+    case 1:
+      return 'User'
+    case 2:
+      return 'Category'
+    case 3:
+      return 'Product'
+    case 4:
+      return 'Product variant'
+    case 5:
+      return 'Product library'
+    case 6:
+      return 'Product library variant'
+    case 7:
+      return 'Order'
+    case 8:
+      return 'Store'
+    case 9:
+      return 'Store order'
+    case 10:
+      return 'Variable types'
+    case 11:
+      return 'Order line items'
+    case 12:
+      return 'Activity log'
+    default:
+      break
+  }
+}
+export const getActionType = (key) => {
+  switch (key) {
+    case 0:
+      return 'None'
+    case 1:
+      return 'Login'
+    case 2:
+      return 'Logout'
+    case 3:
+      return 'View'
+    case 4:
+      return 'Create'
+    case 5:
+      return 'Modify'
+    case 6:
+      return 'Delete'
+    case 7:
+      return 'BulkCreate'
+    case 8:
+      return 'Listing'
+    default:
+      break
   }
 }

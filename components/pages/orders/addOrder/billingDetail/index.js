@@ -16,7 +16,7 @@ import { connect } from 'react-redux'
 import { updateAddresses, fetchShippingMethods } from 'redux/actions/orderActions'
 import CheckIcon from '@material-ui/icons/Check'
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked'
-import { checkIfEmpty } from 'utils/helpers'
+import { checkIfEmpty, checkifValidUrl, hasWhiteSpace } from 'utils/helpers'
 import Select from 'components/select/index'
 const useStyles = style
 
@@ -31,10 +31,11 @@ const BillingDetail = ({
   fetchShippingMethods,
   address,
   handleSubmit,
-  billingAddress
+  billingAddress,
+  isEuOrUk = false
 }) => {
   const classes = useStyles()
-  const [value, setValue] = useState('2')
+  const [value, setValue] = useState('1')
   const [isChecked, setisChecked] = useState(false)
   const [popupChecked, setpopupChecked] = useState(false)
   const [editActive, setEditActive] = useState(false)
@@ -45,6 +46,11 @@ const BillingDetail = ({
   const [shippingMethod, setShippingMethod] = useState()
   const [shippingMethodAccountNumber, setShippingMethodAccountNumber] = useState('')
   const [shippingOptions, setShippingOptions] = useState()
+  const [ioss, setioss] = useState('')
+  const [receipt, setreceipt] = useState('')
+  const [preship, setpreship] = useState('')
+  const [error, seterror] = useState({})
+  const [customPreship, setcustomPreship] = useState(false)
 
   /**
    * handleChange
@@ -89,11 +95,16 @@ const BillingDetail = ({
           (method) =>
             (optionList = [
               ...optionList,
-              { value: method?.id, label: method?.name, shipMethod: method?.shipMethod }
+              {
+                id: method?.id,
+                value: method?.shipMethod,
+                label: method?.name,
+                shipMethod: method?.shipMethod
+              }
             ])
         )
         setShippingOptions(optionList)
-        setShippingMethod(optionList.find((option) => option.shipMethod === 'GS1')?.value)
+        setShippingMethod(optionList.find((option) => option.shipMethod === 'GS1')?.shipMethod)
       }
     }
   }, [])
@@ -134,13 +145,36 @@ const BillingDetail = ({
     setisChecked(e.target.checked)
   }
   const handleSubmitOrder = () => {
+    const shippingMethodId = shippingOptions.find(
+      (option) => option.shipMethod === shippingMethod
+    )?.id
+    const shipMethod = shippingOptions.find(
+      (option) => option.shipMethod === shippingMethod
+    )?.shipMethod
     handleSubmit({
       OrderType: value,
-      shippingMethodId: shippingMethod,
+      ioss: isEuOrUk ? ioss : null,
+      receipt: receipt,
+      preship: preship,
+      shippingMethodId: shippingMethodId,
+      shipMethod: shipMethod,
+      isPreship:
+        shippingOptions.find((option) => option.shipMethod === shippingMethod)?.label === 'PRESHIP',
       shippingAccountNumber: shippingMethodAccountNumber
     })
-    setShippingMethodAccountNumber('')
+    // setShippingMethodAccountNumber('')
   }
+  useEffect(() => {
+    !checkifValidUrl(receipt) && !checkIfEmpty(receipt)
+      ? seterror({ ...error, receipt: 'Invalid url' })
+      : seterror({ ...error, receipt: hasWhiteSpace(receipt) ? 'Invalid url' : null })
+  }, [receipt])
+
+  useEffect(() => {
+    !checkifValidUrl(preship) && !checkIfEmpty(preship)
+      ? seterror({ ...error, preship: 'Invalid url' })
+      : seterror({ ...error, preship: hasWhiteSpace(preship) ? 'Invalid url' : null })
+  }, [preship])
 
   // modal popup
   return (
@@ -221,34 +255,65 @@ const BillingDetail = ({
               </Typography>
             </div>
           </div>
+          {/* {JSON.stringify(Object.values(addresses?.billingAddress).every((v) => checkIfEmpty(v)))} */}
           {!checkIfEmpty(addresses?.billingAddress) ? (
             <div className={classes.addressDetail}>
-              <Typography variant='body1'>
-                <div>
-                  {addresses?.billingAddress?.contactName || addresses?.billingAddress?.name}
-                </div>
-                <div>{addresses?.billingAddress?.companyName}</div>
-                <div>{addresses?.billingAddress?.address1}</div>
-                <div>{addresses?.billingAddress?.address2}</div>
+              {Object.values(addresses?.billingAddress).every((v) => checkIfEmpty(v)) ? (
+                <div className={classes.textAddress}>No address found</div>
+              ) : (
                 <>
-                  {addresses?.billingAddress?.city},
-                  {addresses?.billingAddress?.stateName || addresses?.billingAddress?.state},
-                  {addresses?.billingAddress?.country},{addresses?.billingAddress?.zipCode},
+                  <Typography variant='body1'>
+                    <div>
+                      {addresses?.billingAddress?.contactName || addresses?.billingAddress?.name}
+                    </div>
+                    <div>{addresses?.billingAddress?.companyName}</div>
+                    <div>{addresses?.billingAddress?.address1}</div>
+                    <div>{addresses?.billingAddress?.address2}</div>
+                    <>
+                      {addresses?.billingAddress?.city && `${addresses?.billingAddress?.city},`}
+                      {addresses?.billingAddress?.stateName &&
+                        `${
+                          addresses?.billingAddress?.stateName || addresses?.billingAddress?.state
+                        },`}
+                      {addresses?.billingAddress?.country &&
+                        `${addresses?.billingAddress?.country},`}
+                      {addresses?.billingAddress?.zipCode &&
+                        `${addresses?.billingAddress?.zipCode},`}
+                    </>
+                  </Typography>
+                  <Typography variant='body1'>
+                    Phone:{' '}
+                    {addresses?.billingAddress?.contactPhone ||
+                      addresses?.billingAddress?.companyPhone}
+                  </Typography>
+                  <Typography variant='body1'>
+                    Email Address: {addresses?.billingAddress?.companyEmail}
+                  </Typography>
                 </>
-              </Typography>
-              <Typography variant='body1'>
-                Phone:{' '}
-                {addresses?.billingAddress?.contactPhone || addresses?.billingAddress?.companyPhone}
-              </Typography>
-              <Typography variant='body1'>
-                Email Address: {addresses?.billingAddress?.companyEmail}
-              </Typography>
+              )}
             </div>
           ) : (
             <div className={classes.textAddress}>No address found</div>
           )}
         </div>
       </div>
+      <Typography variant='body1' className={classes.labelForm}>
+        IOSS
+      </Typography>
+      <TextField
+        onChange={(e) => setioss(e?.target?.value)}
+        name='ioss'
+        type='text'
+        disabled={!isEuOrUk}
+        value={ioss}
+        placeholder='Enter IOSS '
+        variant='outlined'
+        style={{ marginTop: '10px', marginBottom: 10 }}
+        fullWidth
+        InputLabelProps={{
+          shrink: false
+        }}
+      />
       <div className={classes.shippingForm_Field}>
         <Select
           options={shippingOptions}
@@ -258,23 +323,77 @@ const BillingDetail = ({
           onChange={(e) => {
             setShippingMethod(e.target.value)
             setShippingMethodAccountNumber()
+            if (
+              shippingOptions.find((option) => option.shipMethod === e.target.value)?.label ===
+              'PRESHIP'
+            ) {
+              setcustomPreship(true)
+            } else {
+              setcustomPreship(false)
+              setpreship(null)
+            }
           }}
         />
-        {shippingMethod !== 1 && shippingMethod !== undefined && (
+        {shippingMethod !== 'GS1' &&
+          shippingMethod !== undefined &&
+          shippingMethod !== 'PRESHIP' && (
+            <TextField
+              variant='outlined'
+              type={'text'}
+              onChange={(e) => setShippingMethodAccountNumber(e.target.value)}
+              placeholder='Shipping account number'
+              defaultValue={shippingMethodAccountNumber}
+              style={{ marginTop: '10px' }}
+              fullWidth
+              InputLabelProps={{
+                shrink: false
+              }}
+            />
+          )}
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <Typography variant='body1' className={classes.labelForm}>
+          Custom packing slips
+        </Typography>
+        <TextField
+          onChange={(e) => setreceipt(e?.target?.value)}
+          name='receipt'
+          type='text'
+          helperText={error?.receipt}
+          error={error?.receipt}
+          value={receipt}
+          placeholder='Enter url '
+          variant='outlined'
+          style={{ marginTop: '10px' }}
+          fullWidth
+          InputLabelProps={{
+            shrink: false
+          }}
+        />
+      </div>
+      {customPreship && (
+        <div style={{ marginBottom: 10 }}>
+          <Typography variant='body1' className={classes.labelForm}>
+            Custom preship labels
+          </Typography>
           <TextField
+            onChange={(e) => setpreship(e?.target?.value)}
+            name='preship'
+            type='text'
+            value={preship}
+            error={error?.preship}
+            helperText={error?.preship}
+            placeholder='Enter url '
             variant='outlined'
-            type={'text'}
-            onChange={(e) => setShippingMethodAccountNumber(e.target.value)}
-            placeholder='Shipping account number'
-            defaultValue={shippingMethodAccountNumber}
             style={{ marginTop: '10px' }}
             fullWidth
             InputLabelProps={{
               shrink: false
             }}
           />
-        )}
-      </div>
+        </div>
+      )}
+
       <div className={classes.btnGrup_Radio}>
         <RadioGroup aria-label='order' name='order1' value={value} onChange={handleChange}>
           <FormControlLabel value={'2'} control={<Radio color='primary' />} label='Test order' />
@@ -282,7 +401,13 @@ const BillingDetail = ({
         </RadioGroup>
       </div>
       <div className={classes.btnPlaceOrder}>
-        <Button type='submit' variant='contained' fullWidth onClick={() => handleSubmitOrder()}>
+        <Button
+          disabled={error?.preship || error?.receipt}
+          type='submit'
+          variant='contained'
+          fullWidth
+          onClick={() => handleSubmitOrder()}
+        >
           Place order
         </Button>
       </div>

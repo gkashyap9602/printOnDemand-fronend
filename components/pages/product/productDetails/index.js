@@ -29,11 +29,9 @@ const DetailContent = ({ product, showLoader }) => {
    * @returns
    */
   const getDefaultProductTemplate = () => {
-    const products = product?.productVarients.find((item) => {
-      return item.isDefaultTemplate
-    })
+    const products = product?.productVarients[0]
 
-    return [products.productId, products.designPanels]
+    return [products?.productId, products?.designPanels]
   }
 
   /**
@@ -41,18 +39,26 @@ const DetailContent = ({ product, showLoader }) => {
    */
   const handleRouteToDesignerTool = () => {
     const [productId, designPanels] = getDefaultProductTemplate()
-    showLoader(true)
-    isActiveInternet(route, {
-      pathname: '/designTool',
-      query: {
-        productId,
-        productVariantId: 0,
-        mode: 'create',
-        ...route.query,
-        title: product?.title,
-        designPanels
-      }
-    })
+    if (productId) {
+      showLoader(true)
+      isActiveInternet(route, {
+        pathname: '/designTool',
+        query: {
+          productId,
+          productVariantId: 0,
+          mode: 'create',
+          ...route.query,
+          title: product?.title,
+          designPanels
+        }
+      })
+    } else {
+      NotificationManager.warning(
+        'Designing feature is not available for this product',
+        ' ',
+        ' 2000'
+      )
+    }
   }
 
   /**

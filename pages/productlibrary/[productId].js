@@ -109,8 +109,16 @@ let ProductLibraryDetail = ({
     if (navigator.onLine) {
       switch (status) {
         case 1:
-          setdata(item)
-          setopen(true)
+          if (item?.isProductVariantDeleted) {
+            NotificationManager.warning(
+              'Product variant has been discontinued from the product catalog',
+              '',
+              4000
+            )
+          } else {
+            setdata(item)
+            setopen(true)
+          }
           break
         case 3:
           setdata(item)
@@ -204,9 +212,9 @@ let ProductLibraryDetail = ({
    */
   const selectAllField = (e) => {
     if (e.target.checked) {
-      const allChecked = productLibrary?.productLibraryVariants.map(
-        (item) => item?.libraryVariantId
-      )
+      const allChecked = productLibrary?.productLibraryVariants
+        ?.filter((ele) => !ele.isProductVariantDeleted)
+        ?.map((item) => item?.libraryVariantId)
       setIsCheck(allChecked)
     } else {
       setIsCheck([])
@@ -219,28 +227,36 @@ let ProductLibraryDetail = ({
    * @param {*} list
    */
   const checkBoxHandler = (e, list) => {
-    if (checkIfEmpty(route?.query?.orderId)) {
-      const isSelected = isCheck?.includes(list.libraryVariantId)
-      if (isSelected) {
-        const valueUpdated = isCheck.filter((item) => item !== list.libraryVariantId)
-        setIsCheck(valueUpdated)
-      } else {
-        setIsCheck([...isCheck, list?.libraryVariantId])
-      }
-    } else if (
-      !checkIfEmpty(route?.query?.orderId) &&
-      checkIfEmpty(
-        orderDetail?.lineItems?.find(
-          (val) => val?.productLibraryVarientId === list?.libraryVariantId
-        )
+    if (list?.isProductVariantDeleted) {
+      NotificationManager.warning(
+        'Product variant has been discontinued from the product catalog',
+        '',
+        3000
       )
-    ) {
-      const isSelected = isCheck?.includes(list?.libraryVariantId)
-      if (isSelected) {
-        const valueUpdated = isCheck.filter((item) => item !== list?.libraryVariantId)
-        setIsCheck(valueUpdated)
-      } else {
-        setIsCheck([...isCheck, list?.libraryVariantId])
+    } else {
+      if (checkIfEmpty(route?.query?.orderId)) {
+        const isSelected = isCheck?.includes(list.libraryVariantId)
+        if (isSelected) {
+          const valueUpdated = isCheck.filter((item) => item !== list.libraryVariantId)
+          setIsCheck(valueUpdated)
+        } else {
+          setIsCheck([...isCheck, list?.libraryVariantId])
+        }
+      } else if (
+        !checkIfEmpty(route?.query?.orderId) &&
+        checkIfEmpty(
+          orderDetail?.lineItems?.find(
+            (val) => val?.productLibraryVarientId === list?.libraryVariantId
+          )
+        )
+      ) {
+        const isSelected = isCheck?.includes(list?.libraryVariantId)
+        if (isSelected) {
+          const valueUpdated = isCheck.filter((item) => item !== list?.libraryVariantId)
+          setIsCheck(valueUpdated)
+        } else {
+          setIsCheck([...isCheck, list?.libraryVariantId])
+        }
       }
     }
   }
@@ -248,32 +264,41 @@ let ProductLibraryDetail = ({
    * Handle New order
    */
   const handleNewOrder = async () => {
-    if (!navigator.onLine) {
-      NotificationManager.error('No active internet connection.', '', 10000)
+    if (productLibrary?.isProductDeleted) {
+      NotificationManager.warning(
+        'Product has been discontinued from the product catalog',
+        '',
+        5000
+      )
+      setToggleOrderModal(false)
     } else {
-      if (isCheck?.length > 0) {
-        let cartItems = []
-        isCheck.map((item) => {
-          cartItems = [
-            ...cartItems,
-            {
-              productLibraryVariantId: item,
-              quantity: 1
-            }
-          ]
-        })
-        setLoader(true)
-        const res = await addCartItems({ cartItems })
-        if (res) {
-          setToggleOrderModal(false)
-          setLoader(false)
-          setIsCheck([])
-        }
-        if (res?.statusCode === 200) {
-          NotificationManager.success('Product added to cart', '', 2000)
-        }
-        if (res?.StatusCode === 400) {
-          NotificationManager.error(res?.Response.Message, '', 10000)
+      if (!navigator.onLine) {
+        NotificationManager.error('No active internet connection.', '', 10000)
+      } else {
+        if (isCheck?.length > 0) {
+          let cartItems = []
+          isCheck.map((item) => {
+            cartItems = [
+              ...cartItems,
+              {
+                productLibraryVariantId: item,
+                quantity: 1
+              }
+            ]
+          })
+          setLoader(true)
+          const res = await addCartItems({ cartItems })
+          if (res) {
+            setToggleOrderModal(false)
+            setLoader(false)
+            setIsCheck([])
+          }
+          if (res?.statusCode === 200) {
+            NotificationManager.success('Product added to cart', '', 2000)
+          }
+          if (res?.StatusCode === 400) {
+            NotificationManager.error(res?.Response.Message, '', 10000)
+          }
         }
       }
     }
@@ -322,6 +347,7 @@ let ProductLibraryDetail = ({
         </Typography>
         {/* <!--table--> */}
         <DataTable
+          PageId={'product_variant'}
           isExtraFieldReq={true}
           isCheck={isCheck}
           checkBoxHandler={checkBoxHandler}
@@ -337,7 +363,12 @@ let ProductLibraryDetail = ({
               icon: 'edit-icon',
               key: 'editable'
             },
-            { status: 3, label: 'Delete', icon: 'delete' }
+            {
+              status: 3,
+              label: 'Delete',
+              icon: 'delete',
+              disable: !productLibrary?.editable
+            }
           ]}
         />
 

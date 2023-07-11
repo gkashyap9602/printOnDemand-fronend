@@ -74,6 +74,13 @@ export const updateField = (field, val) => {
   }
 }
 
+export const updateStoreUploadsQuery = (val) => {
+  return {
+    type: USER_STORE.UPDATE_STORE_UPLOADS_QUERY,
+    val
+  }
+}
+
 export const fetchAllStoreUploads = (data) => {
   const fetchOptions = {
     url: `api/ProductLibrary/getpushproducttostoredetails`,

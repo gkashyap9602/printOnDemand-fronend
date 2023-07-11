@@ -20,11 +20,11 @@ function OrderFilter({
   const [filters, setFilters] = useState({ from: '', to: '', orderType: '0', sources: {} })
   const classes = useStyles()
   const OPTIONS = [
-    { label: 'Online store', value: '1' },
-    { label: 'Mww api', value: '2' },
-    { label: 'Shopify store', value: '3' },
-    { label: 'Etsy store', value: '4' },
-    { label: 'Bulk import', value: '5' }
+    { label: 'Merch maker', value: '1' },
+    { label: 'MWW system', value: '2' },
+    { label: 'Shopify', value: '3' },
+    // { label: 'Etsy', value: '4' },
+    { label: 'Excel upload', value: '5' }
   ]
   useEffect(() => {
     setFilters({
@@ -42,23 +42,25 @@ function OrderFilter({
 
   return (
     <ClickAwayListener onClickAway={() => setfilter(false)}>
-      <div className={`${classes.delayContainer} ${classes.filter_Wrap}`}>
+      <div className={`${classes.delayContainer} ${classes.filter_Wrap_UI}`}>
         <h2 style={{ marginTop: 8 }}>Filter</h2>
         <Grid container spacing={2} direction='row'>
           <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
             <label>Date</label>
+            <div style={{ height: 10 }} />
             <ReactDatePicker
-              className={classes.ab}
               placeholderText='From'
               selected={filters?.from}
               onChange={(date) => {
                 setFilters({ ...filters, from: date })
               }}
               maxDate={new Date()} // add this in your date componet
+              style={{ marginTop: 10 }}
             />
           </Grid>
           <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
             <label className={classes.XsLabelDate}>&nbsp;</label>
+            <div style={{ height: 10 }} />
             <ReactDatePicker
               maxDate={new Date()} // add this in your date componet
               minDate={filters?.from} // add this in your date componet

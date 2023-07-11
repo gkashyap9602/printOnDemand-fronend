@@ -134,6 +134,12 @@ export const updateAddresses = (address) => {
   }
 }
 
+export const updateField = (val) => {
+  return {
+    type: ORDERS.GET_CART_ITEMS,
+    payload: val
+  }
+}
 export const updateOrderQuery = (val) => {
   return {
     type: ORDERS.UPDATE_ORDER_QUERY,

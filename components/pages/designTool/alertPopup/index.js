@@ -21,10 +21,10 @@ const AlertPopup = ({ onConfirm, onClose, mode }) => {
     }
   }, [])
   const handleBack = () => {
-    if (section > 0 && mode != 'edit') setSection(0)
+    if (section > 0 && mode != 'edit' && mode != 'duplicate') setSection(0)
     else onClose()
   }
-  const getProductVariants = () => {}
+
   return (
     <div>
       {section === 0 && mode != 'edit' && (

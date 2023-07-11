@@ -12,7 +12,8 @@ import {
   createOrders,
   updateVariantsOfOrders,
   fetchCartItems,
-  placeOrder
+  placeOrder,
+  updateField
 } from 'redux/actions/orderActions'
 import { useRouter } from 'next/router'
 import { NotificationManager } from 'react-notifications'
@@ -21,6 +22,7 @@ import Modal from 'components/modal'
 import Image from 'next/image'
 import AlertBanner from '/static/images/alert-banner.png'
 import { getProductLibraryDetail } from 'redux/actions/productLibraryActions'
+import { EU_UK_COUNTRIES } from 'constants/fields'
 const useStyles = style
 
 /**
@@ -39,6 +41,7 @@ const Cart = ({
   userAccountDetails,
   fetchCartItems,
   placeOrder,
+  updateField,
   userDetails
 }) => {
   const classes = useStyles()
@@ -48,27 +51,40 @@ const Cart = ({
   const [disable, setdisable] = useState(false)
   const [type, setType] = useState({})
   const [loader, setloader] = useState(false)
+  const FEDEX = [
+    'FED_SO',
+    'FED_PO',
+    'FED_2DAC',
+    'FED_2DAR',
+    'FED_GR',
+    'FED_GC',
+    'FED_GH',
+    'INT_FED_ECO',
+    'INT_FED_PRI',
+    'INT_FED_FST'
+  ]
   /**
    * useEffect
    */
   useEffect(async () => {
     if (userDetails?.guid) {
       setloader(true)
-      const res = await getAccontDetails(userDetails?.guid)
-      // const data = await getProductLibraryDetail(route?.query?.productId)
       const result = await updateVariantsOfOrders({
-        // variants: data?.response?.productLibraryVariants.map((item) => item),
         productId: route.query.productId
       })
-      if (result) {
-        setloader(false)
-      }
     }
   }, [userDetails])
+
   useEffect(async () => {
     const res = await fetchCartItems()
-    if (res?.StatusCode !== 200) {
-      // NotificationManager.error(res?.Response?.Message, '', 5000)
+    console.log('res')
+    console.log(res)
+    if (res?.StatusCode === 400) {
+      setloader(false)
+      updateField([])
+    }
+    if (res) {
+      setloader(false)
     }
   }, [])
 
@@ -83,12 +99,6 @@ const Cart = ({
       NotificationManager.error('Shipping address is required', '', 10000)
     } else if (checkIfEmpty(variants)) {
       NotificationManager.error('Add one or more product variants to place an order', '', 10000)
-    } else if (checkIfEmpty(userAccountDetails?.response?.payTraceId)) {
-      NotificationManager.error(
-        'You must update your payment information in order to place an order',
-        '',
-        10000
-      )
     } else {
       setdisable(true)
       setloader(true)
@@ -96,6 +106,19 @@ const Cart = ({
         OrderType: parseInt(type?.OrderType),
         shippingMethodId: type?.shippingMethodId,
         shippingAccountNumber: type?.shippingAccountNumber,
+        receipt: type?.receipt,
+        preship: type?.preship,
+        ioss: EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(address?.shippingAddress?.country)
+          ? type?.ioss
+          : null,
+        cartItems: EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(address?.shippingAddress?.country)
+          ? lineItems?.map((val) => ({
+              guid: val?.guid,
+              hsCode: val?.hsCode,
+              declaredValue: val?.declaredValue
+            }))
+          : null,
+
         shippingAddress: {
           name: address?.shippingAddress?.contactName,
           companyName: address?.shippingAddress?.companyName,
@@ -126,6 +149,7 @@ const Cart = ({
         },
         submitImmediately: value
       })
+      console.log(res)
       if (res) {
         setloader(false)
       }
@@ -140,6 +164,8 @@ const Cart = ({
       } else if (res.StatusCode === 12002 || res.StatusCode >= 400) {
         setdisable(false)
         res?.Response?.ValidationErrors?.map((txt) => NotificationManager.error(txt, '', 10000))
+        NotificationManager.error(res?.Response?.Message, '', 10000)
+        setopen(false)
       }
     }
   }
@@ -157,30 +183,84 @@ const Cart = ({
             {/* <BreadCrumb
               routes={[{ name: 'Order list', link: '/orders' }, { name: 'Order details' }]}
             /> */}
+            {/* {JSON.stringify(lineItems)} */}
             <AddOrder
               variants={variants}
               productId={productId}
+              isEuOrUk={EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(
+                address?.shippingAddress?.country
+              )}
               handleCount={(itm) => setlineItems(itm)}
               handleloader={(val) => setloader(val)}
               productLibraryVariantLength={productLibraryVariantLength}
             />
           </Grid>
+          {/* {JSON.stringify(lineItems)}
+          {JSON.stringify(lineItems.map((val) => checkIfEmpty(val?.hsCode)))} */}
           <Grid item xs={12} sm={12} md={12} lg={4} xl={4} className={classes.orderDetail}>
             <BillingDetail
+              isEuOrUk={EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(
+                address?.shippingAddress?.country
+              )}
               handleSubmit={(values) => {
-                if (checkIfEmpty(address?.billingAddress)) {
-                  NotificationManager.error('Billing address is required', '', 10000)
-                } else if (checkIfEmpty(address?.shippingAddress)) {
-                  NotificationManager.error('Shipping address is required', '', 10000)
-                } else if (checkIfEmpty(variants)) {
+                if (
+                  FEDEX?.includes(values?.shipMethod) &&
+                  checkIfEmpty(values?.shippingAccountNumber)
+                ) {
                   NotificationManager.error(
-                    'Add one or more product variants to place an order',
+                    'Kindly enter a shipping account number for the selected shipping method',
                     '',
                     10000
                   )
-                } else if (checkIfEmpty(userAccountDetails?.response?.payTraceId)) {
+                } else if (
+                  address?.shippingAddress?.country !== 'US' &&
+                  values?.shipMethod === 'GS1'
+                ) {
                   NotificationManager.error(
-                    'You must update your payment information in order to place an order',
+                    'Flat rate shipping method is not allowed for international orders',
+                    '',
+                    10000
+                  )
+                } else if (checkIfEmpty(address?.billingAddress)) {
+                  NotificationManager.error('Billing address is required', '', 10000)
+                } else if (checkIfEmpty(address?.shippingAddress)) {
+                  NotificationManager.error('Shipping address is required', '', 10000)
+                } else if (values?.isPreship && checkIfEmpty(values?.preship)) {
+                  NotificationManager.error(
+                    'Please provide URL for custom preship labels',
+                    '',
+                    10000
+                  )
+                } else if (
+                  EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(
+                    address?.shippingAddress?.country
+                  ) &&
+                  !lineItems.map((val) => checkIfEmpty(val?.hsCode)).every((v) => v === false)
+                ) {
+                  NotificationManager.error('Please provide HS code of each variant', '', 10000)
+                } else if (
+                  EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(
+                    address?.shippingAddress?.country
+                  ) &&
+                  !lineItems
+                    .map((val) => checkIfEmpty(val?.declaredValue))
+                    .every((v) => v === false)
+                ) {
+                  NotificationManager.error(
+                    'Please provide declared value of each variant',
+                    '',
+                    10000
+                  )
+                } else if (
+                  EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(
+                    address?.shippingAddress?.country
+                  ) &&
+                  checkIfEmpty(values?.ioss)
+                ) {
+                  NotificationManager.error('Please provide IOSS', '', 10000)
+                } else if (checkIfEmpty(variants)) {
+                  NotificationManager.error(
+                    'Add one or more product variants to place an order',
                     '',
                     10000
                   )
@@ -245,7 +325,8 @@ const mapDispatchToProps = {
   getProductLibraryDetail,
   updateVariantsOfOrders,
   fetchCartItems,
-  placeOrder
+  placeOrder,
+  updateField
 }
 // export
 export default connect(mapStateToProps, mapDispatchToProps)(Cart)

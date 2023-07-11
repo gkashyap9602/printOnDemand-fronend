@@ -59,7 +59,7 @@ const BuildText = ({
   const [mode, setMode] = useState('Add text')
   const showPalatteHandler = () => {
     setShowPalatte(!showPalatte)
-    handleCollapse()
+    handleCollapse(false)
   }
 
   const design = useSelector((state) => state.design)

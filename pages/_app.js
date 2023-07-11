@@ -12,6 +12,7 @@ import Script from 'next/script'
 import { NotificationManager } from 'react-notifications'
 import { setShopifyAccessData } from '../redux/actions/shopifyActions'
 import { isShopifyApp } from '../utils/helpers'
+import ErrorBoundary from 'components/errorBoundary'
 
 /**
  * MyApp
@@ -140,7 +141,9 @@ function MyApp({ Component, pageProps = {}, cookieData, initRouter }) {
       />
       <ThemeProvider theme={theme}>
         <NotificationContainer />
+        {/* <ErrorBoundary> */}
         <Component {...pageProps} />
+        {/* </ErrorBoundary> */}
       </ThemeProvider>
     </Provider>
   )

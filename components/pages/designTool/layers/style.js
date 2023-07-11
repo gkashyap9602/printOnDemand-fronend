@@ -81,7 +81,7 @@ const style = makeStyles((theme) => ({
       position: 'unset',
       marginTop: '20px!important'
     },
-    '@media screen and (min-width:960px) and (max-width:1280px)': {
+    '@media screen and (min-width:960px) and (max-width:1279px)': {
       width: '30.3%!important'
     }
   },

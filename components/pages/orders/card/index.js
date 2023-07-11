@@ -10,6 +10,7 @@ import style from './style'
 import { checkIfEmpty } from 'utils/helpers'
 import imageNoFound from '/static/images/Image-no-found.png'
 import ImageContainer from 'components/imageContainer'
+import { EU_UK_COUNTRIES } from 'constants/fields'
 
 const useStyles = style
 
@@ -96,25 +97,28 @@ const CardBlock = ({ item, isAdmin = false, country }) => {
                   </div>
                 </div>
               ))}
-
-              {isAdmin && (country === 'EU' || country === 'UK') && (
+              {EU_UK_COUNTRIES?.map((v) => v?.code)?.includes(country) && (
                 <div className={classes.variantFlex}>
-                  <div className={clsx(classes.variantGrow, classes.leftItem)}>
-                    <Typography variant='h4' className={classes.productPrice}>
-                      HS code
-                    </Typography>
-                    <Typography variant='body2' className={classes.productAmount}>
-                      {item?.HsCode || '---'}
-                    </Typography>
-                  </div>
-                  <div className={clsx(classes.variantGrow, classes.rightItem)}>
-                    <Typography variant='h4' className={classes.productPrice}>
-                      Declared value
-                    </Typography>
-                    <Typography variant='body2' className={classes.productAmount}>
-                      {item?.DeclaredValue || '---'}
-                    </Typography>
-                  </div>
+                  {item?.hsCode && (
+                    <div className={clsx(classes.variantGrow, classes.leftItem)}>
+                      <Typography variant='h4' className={classes.productPrice}>
+                        HS code
+                      </Typography>
+                      <Typography variant='body2' className={classes.productAmount}>
+                        {item?.hsCode || '---'}
+                      </Typography>
+                    </div>
+                  )}
+                  {item?.declaredValue && (
+                    <div className={clsx(classes.variantGrow, classes.rightItem)}>
+                      <Typography variant='h4' className={classes.productPrice}>
+                        Declared value
+                      </Typography>
+                      <Typography variant='body2' className={classes.productAmount}>
+                        {item?.declaredValue || '---'}
+                      </Typography>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

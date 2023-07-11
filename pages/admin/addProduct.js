@@ -142,7 +142,7 @@ let AddProduct = ({
   const [saveLoader, setSaveLoader] = useState(false)
   const [selectedValues, setSelectedValues] = useState({
     fabric: '',
-    category: '',
+    category: [],
     subcategory: [],
     productVariants: []
   })
@@ -211,14 +211,44 @@ let AddProduct = ({
 
   useEffect(() => {
     if (category && category !== undefined) {
-      const selectedParentCategory = categoryOptions?.filter((item) => item.value === category)
-      const subCategoryOptions = selectedParentCategory[0]?.subCategories.map(({ id, name }) => {
-        return {
-          value: id,
-          label: name
-        }
+      const selectedParentCategory = categoryOptions?.filter((item) =>
+        category.includes(item.value)
+      )
+
+      let subCategoryOptions = []
+      selectedParentCategory.forEach((ele) => {
+        ele.subCategories.map(({ id, name }) => {
+          subCategoryOptions.push({
+            value: id,
+            label: name
+          })
+        })
       })
       setSubCategoryOptions(subCategoryOptions)
+      if (category.length === 0) {
+        changeFieldValue('AddProduct', 'subcategory', [])
+        setSelectedValues({
+          ...selectedValues,
+          category: selectedParentCategory.map((cat) => cat.value),
+          subcategory: []
+        })
+      } else {
+        if (subcategory && subCategoryOptions.length) {
+          let selectedCat = subCategoryOptions
+            .filter((val) => subcategory.includes(val.value))
+            .map((ele) => ele.value)
+
+          subCategoryOptions
+            .filter((val) => subcategory.includes(val.value))
+            .map((ele) => ele.value)
+          changeFieldValue('AddProduct', 'subcategory', selectedCat)
+          setSelectedValues({
+            ...selectedValues,
+            category: selectedParentCategory.map((cat) => cat.value),
+            subcategory: selectedCat
+          })
+        }
+      }
     }
   }, [categoryOptions, category])
 
@@ -260,19 +290,26 @@ let AddProduct = ({
         setProductGuid(response.guid)
         const variants = response?.productVariableTypes?.map(({ variableTypeId }) => variableTypeId)
         const subCats = response?.productCategories?.map(({ categoryId }) => categoryId)
+        let categoryListSelected = []
+        categoryOptions.forEach((ele) => {
+          const selectedSubCat = ele.subCategories.filter((subcat) => subCats.includes(subcat.id))
+          if (selectedSubCat.length) {
+            categoryListSelected.push(ele.value)
+          }
+        })
         setSelectedValues({
           ...selectedValues,
           subcategory: subCats,
           productVariants: variants,
           fabric: response.materialId,
-          category: response.parentCategoryId
+          category: categoryListSelected
         })
         setIsRendered(!isRendered)
         changeFieldValue('AddProduct', 'title', response.title)
         changeFieldValue('AddProduct', 'description', response.longDescription)
         changeFieldValue('AddProduct', 'construction', response.construction)
         changeFieldValue('AddProduct', 'process', response.process)
-        changeFieldValue('AddProduct', 'category', response.parentCategoryId)
+        changeFieldValue('AddProduct', 'category', categoryListSelected)
         changeFieldValue('AddProduct', 'fabric', response.materialId)
         changeFieldValue('AddProduct', 'subcategory', subCats)
         changeFieldValue('AddProduct', 'features', response.features)
@@ -521,25 +558,24 @@ let AddProduct = ({
 
   const isCategoryUpdated = () => {
     if (category && category !== undefined) {
-      const selectedParentCategory = categoryOptions?.filter((item) => item.value === category)
-      const subCategoryOptions = selectedParentCategory[0]?.subCategories.map(({ id, name }) => {
-        return {
-          value: id,
-          label: name
-        }
+      const selectedParentCategory = categoryOptions?.filter((item) =>
+        category.includes(item.value)
+      )
+      const subCategoryOptions = []
+      selectedParentCategory.forEach((ele) => {
+        ele.subCategories.map(({ id, name }) => {
+          subCategoryOptions.push({
+            value: id,
+            label: name
+          })
+        })
       })
       setSubCategoryOptions(subCategoryOptions)
     }
     if (category && category !== undefined) {
-      changeFieldValue('AddProduct', 'subcategory', [])
-      setSelectedValues({
-        ...selectedValues,
-        subcategory: []
-      })
       setIsCategoryChanged(!isCategoryChanged)
     }
   }
-
   const handleModalClose = () => {
     setToggleModal(false)
   }
@@ -550,7 +586,6 @@ let AddProduct = ({
   const setSizeChartCB = (items) => {
     setSizeChart(items)
   }
-
   const tableValuesCB = (event, column, row) => {
     const {
       target: { value }
@@ -600,9 +635,11 @@ let AddProduct = ({
         return tableRow
       })
     ]
+
     const currentRow = tableDetails['body'].filter((rowItem) => rowItem.uuid === file.rowId)[0][
       'tableCell'
     ]
+
     NotificationManager.success(
       currentRow[currentRow.length - 1].value === 'Save'
         ? 'Template added'
@@ -622,107 +659,124 @@ let AddProduct = ({
   }
 
   const saveCreateProductBasicInfo = async () => {
-    setSaveLoader(true)
-    setSaveBasicInfoModal(false)
-    let createProductRes
-    let data = {
-      title,
-      categoryIds: [...subcategory],
-      longDescription: description,
-      careInstructions,
-      status: 1,
-      productionDuration: '',
-      productVariableTypes: productVariants && [
-        ...productVariants?.map((variants) => {
-          return {
-            variableTypeId: variants
-          }
-        })
-      ],
-      materialId: fabric,
-      process,
-      construction,
-      features,
-      productionDuration
-    }
-    if (!productGuid) {
-      createProductRes = await createProduct(data)
-    } else {
-      data = {
-        ...data,
-        guid: productGuid
+    const includedCatList = categoryOptions.filter((ele) => category.includes(ele.value))
+    let includedCategoryList = []
+    includedCatList.forEach((val) => {
+      const event = (element) => subcategory.includes(element.id)
+      if (val.subCategories.some(event)) {
+        includedCategoryList.push(val.value)
       }
-      delete data?.productVariableTypes
-      const existingData = {
-        ...productDetails?.response,
-        categoryIds: [
-          ...productDetails?.response?.productCategories?.map(({ categoryId }) => categoryId)
-        ]
+    })
+    if (category.length === includedCategoryList.length) {
+      setSaveLoader(true)
+      setSaveBasicInfoModal(false)
+      let createProductRes
+      let data = {
+        title,
+        categoryIds: [...subcategory],
+        longDescription: description,
+        careInstructions,
+        status: 1,
+        productionDuration: '',
+        productVariableTypes: productVariants && [
+          ...productVariants?.map((variants) => {
+            return {
+              variableTypeId: variants
+            }
+          })
+        ],
+        materialId: fabric,
+        process,
+        construction,
+        features,
+        productionDuration
       }
-      delete existingData?.materialName
-      delete existingData?.parentCategoryId
-      delete existingData?.parentCategoryName
-      delete existingData?.productImages
-      delete existingData?.productVariableTypes
-      delete existingData?.productVarients
-      delete existingData?.sizeChart
-      delete existingData?.productCategories
-      delete existingData?.shortDescription
-      const isOldDataSame =
-        Object.entries(data).sort().toString() === Object.entries(existingData).sort().toString()
-      if (!isOldDataSame) {
-        createProductRes = await updateProduct(data)
+      if (!productGuid) {
+        createProductRes = await createProduct(data)
       } else {
-        NotificationManager.warning(`Nothing to update`, '', 2000)
-        setSaveLoader(false)
-      }
-    }
-    if (
-      (createProductRes?.StatusCode >= 400 ||
-        createProductRes?.StatusCode === 12002 ||
-        createProductRes?.hasError) &&
-      createProductRes?.StatusCode !== 401
-    ) {
-      NotificationManager.error(
-        createProductRes?.Response?.Message
-          ? createProductRes?.Response?.Message
-          : 'Something went wrong, please refresh the page',
-        '',
-        10000
-      )
-      setSaveLoader(false)
-    }
-    if (createProductRes?.statusCode >= 200 && createProductRes?.statusCode <= 300) {
-      NotificationManager.success(
-        `${!productGuid ? 'Product info saved' : 'Product updated'}`,
-        '',
-        2000
-      )
-      router.push({
-        pathname: '/admin/addProduct',
-        query: {
-          id: createProductRes?.response?.productGuid || productGuid,
-          categoryId: categories?.find((val) => val?.id === category)?.guid,
-          productList: router.query.productList,
-          redirectAfterCreate: true
+        data = {
+          ...data,
+          guid: productGuid
         }
-      })
-      setSaveLoader(false)
-      const res = await getProductDetail(
-        !productGuid ? createProductRes?.response?.productGuid : productGuid
-      )
+        delete data?.productVariableTypes
+        const existingData = {
+          ...productDetails?.response,
+          categoryIds: [
+            ...productDetails?.response?.productCategories?.map(({ categoryId }) => categoryId)
+          ]
+        }
+        delete existingData?.materialName
+        delete existingData?.parentCategoryId
+        delete existingData?.parentCategoryName
+        delete existingData?.productImages
+        delete existingData?.productVariableTypes
+        delete existingData?.productVarients
+        delete existingData?.sizeChart
+        delete existingData?.productCategories
+        delete existingData?.shortDescription
+        const isOldDataSame =
+          Object.entries(data).sort().toString() === Object.entries(existingData).sort().toString()
+        if (!isOldDataSame) {
+          createProductRes = await updateProduct(data)
+        } else {
+          NotificationManager.warning(`Nothing to update`, '', 2000)
+          setSaveLoader(false)
+        }
+      }
       if (
-        (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res?.hasError) &&
-        res?.StatusCode !== 401
+        (createProductRes?.StatusCode >= 400 ||
+          createProductRes?.StatusCode === 12002 ||
+          createProductRes?.hasError) &&
+        createProductRes?.StatusCode !== 401
       ) {
         NotificationManager.error(
-          res?.Response?.Message
-            ? res?.Response?.Message
+          createProductRes?.Response?.Message
+            ? createProductRes?.Response?.Message
             : 'Something went wrong, please refresh the page',
           '',
           10000
         )
+        setSaveLoader(false)
       }
+      if (createProductRes?.statusCode >= 200 && createProductRes?.statusCode <= 300) {
+        NotificationManager.success(
+          `${!productGuid ? 'Product info saved' : 'Product updated'}`,
+          '',
+          2000
+        )
+        router.push({
+          pathname: '/admin/addProduct',
+          query: {
+            id: createProductRes?.response?.productGuid || productGuid,
+            categoryId: categories?.find((val) => val?.id === category)?.guid,
+            productList: router.query.productList,
+            redirectAfterCreate: true
+          }
+        })
+        setSaveLoader(false)
+        const res = await getProductDetail(
+          !productGuid ? createProductRes?.response?.productGuid : productGuid
+        )
+        if (
+          (res?.StatusCode >= 400 || res?.StatusCode === 12002 || res?.hasError) &&
+          res?.StatusCode !== 401
+        ) {
+          NotificationManager.error(
+            res?.Response?.Message
+              ? res?.Response?.Message
+              : 'Something went wrong, please refresh the page',
+            '',
+            10000
+          )
+        }
+      }
+    } else {
+      setSaveBasicInfoModal(false)
+      NotificationManager.warning(
+        'Subcategories related to one or more categories have not been selected',
+        '',
+        4000
+      )
     }
   }
 
@@ -788,14 +842,18 @@ let AddProduct = ({
 
   const saveRowData = async (data, action) => {
     let productVarResponse
+    const productCode = data['tableCell']
+      .filter((filteredItem) => filteredItem.title === 'Product code')[0]
+      .value?.trim()
+    const prodVariant = productDetails?.response?.productVarients.filter(
+      (itm) => itm?.productCode === productCode
+    )
     let productVariantTable = {
       productGuid: productGuid,
-      productCode: data['tableCell']
-        .filter((filteredItem) => filteredItem.title === 'Product code')[0]
-        .value?.trim(),
+      productCode: productCode,
       price: data['tableCell'].filter((filteredItem) => filteredItem.title === 'Price')[0].value,
-      msrp: 0,
-      designPanels: 0,
+      msrp: prodVariant[0] && prodVariant[0]?.msrp,
+      designPanels: prodVariant[0] && prodVariant[0]?.designPanels,
       varientOptions: [
         ...data['tableCell']
           ?.filter((item) => item.isNewItem)
@@ -1025,13 +1083,15 @@ let AddProduct = ({
           label: name
         }
       })
+
       setSubCategoryOptions(subCategoryOptions)
-      changeFieldValue('AddProduct', 'category', id)
+      changeFieldValue('AddProduct', 'category', [id])
       changeFieldValue('AddProduct', 'subcategory', [
         categories
           ?.find((val) => val.guid === router.query.categoryId)
           ?.subCategories?.find((val) => val?.guid === router.query.productList)?.id
       ])
+
       setSelectedValues({
         ...selectedValues,
         subcategory: [
@@ -1039,7 +1099,7 @@ let AddProduct = ({
             ?.find((val) => val.guid === router.query.categoryId)
             ?.subCategories?.find((val) => val?.guid === router.query.productList)?.id
         ],
-        category: categories?.find((val) => val.guid === router.query.categoryId)?.id
+        category: [categories?.find((val) => val.guid === router.query.categoryId)?.id]
       })
     }
   }, [])
@@ -1163,9 +1223,12 @@ let AddProduct = ({
                       type={field?.type || 'text'}
                       isCategoryUpdated={isCategoryUpdated}
                       component={
-                        field?.type === 'select' && field.name !== 'subcategory'
+                        field?.type === 'select' &&
+                        field.name !== 'subcategory' &&
+                        field.name !== 'category'
                           ? Select
-                          : field?.type === 'select' && field.name === 'subcategory'
+                          : field?.type === 'select' &&
+                            (field.name === 'subcategory' || field.name === 'category')
                           ? MultiSelect
                           : TextInput
                       }
@@ -1182,7 +1245,8 @@ let AddProduct = ({
                       }
                       selectedValue={field?.type === 'select' && selectedValues[field.name]}
                       selectedMultipleValue={
-                        field.name === 'subcategory' && selectedValues[field.name]
+                        (field.name === 'subcategory' || field.name === 'category') &&
+                        selectedValues[field.name]
                       }
                       isCategoryChanged={isCategoryChanged}
                       isRendered={isRendered}

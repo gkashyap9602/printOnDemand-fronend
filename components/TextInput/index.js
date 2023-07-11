@@ -32,7 +32,10 @@ function TextInput({
   multiline = false,
   handleOnClick = () => {},
   onChange = () => {},
-  rows = 1
+  rows = 1,
+  isPayment = false,
+  val = '',
+  asterick = false
 }) {
   const useStyles = style
   const classes = useStyles()
@@ -106,7 +109,7 @@ function TextInput({
   return (
     <div className={id === 'hiddenId' ? classes?.hide : classes.rootInput}>
       <Typography variant='body1' className={id === 'hiddenId' ? classes.hide : classes.labelForm}>
-        {label}
+        {label} {asterick && '*'}
       </Typography>
 
       <ToolTip tooltip={tooltip} passwordArray={passwordArray} active={active}></ToolTip>
@@ -126,7 +129,7 @@ function TextInput({
         onChange={handleOnChange}
         id={name}
         placeholder={placeholder}
-        value={(type === 'password' && value.current) || (input && input.value)}
+        value={(type === 'password' && value.current) || input.value || (isPayment ? val : '')}
         type={typ}
         onKeyDown={(e) => type === 'number' && symbolsArr.includes(e.key) && e.preventDefault()}
         onInput={(e) => {

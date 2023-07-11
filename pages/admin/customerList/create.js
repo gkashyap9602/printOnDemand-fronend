@@ -1,6 +1,7 @@
 import { Box, Button, Grid, Icon, Typography } from '@material-ui/core'
 import Layout from 'components/layout'
 import Modal from 'components/modal'
+import CancelPopup from '/static/images/customer-cancel.png'
 import BasicInfo from 'components/pages/adminPortal/customerTab/Create/basicInfo'
 import BillingInfo from 'components/pages/adminPortal/customerTab/Create/billingInfo'
 import PaymentInfo from 'components/pages/adminPortal/customerTab/Create/paymentInfo'
@@ -19,8 +20,9 @@ import { connect, useSelector } from 'react-redux'
 import { reduxForm } from 'redux-form'
 import { AddCustomer } from 'redux/actions/admin/customerActions'
 import { getCountryList, getStateList } from 'redux/actions/userActions'
-import { checkIfEmpty, validateFields } from 'utils/helpers'
+import { calculateAmountOfOrder, checkIfEmpty, validateFields } from 'utils/helpers'
 import style from './style'
+import Image from 'next/image'
 const useStyles = style
 
 /**
@@ -36,8 +38,15 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
 
   const route = useRouter()
   const [data, setdata] = useState({
-    shippingAddress: { country: 'US' },
-    billingAddress: { country: 'US' },
+    shippingAddress: {
+      country: 'US'
+    },
+    billingAddress: {
+      country: 'US'
+    },
+    billingAddressDup: {
+      country: 'US'
+    },
     paymentDetails: { country: 'US' }
   })
   const countryList = useSelector((state) => state?.user?.countryList?.response)
@@ -50,27 +59,104 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
    * @param {*} key
    */
   const handleChange = (name, value, key = null) => {
-    switch (key) {
-      case 'shipping':
-        isChecked
-          ? setdata({
-              ...data,
-              billingAddress: { ...data?.shippingAddress, [name]: value },
-              shippingAddress: { ...data?.shippingAddress, [name]: value }
-            })
-          : setdata({ ...data, shippingAddress: { ...data?.shippingAddress, [name]: value } })
+    if (name === 'NcFields' && value === null) {
+      setdata({
+        ...data,
+        billingAddress: {
+          ...data?.billingAddress,
+          NCResaleCertificate: null,
+          isExemptionEligible: false
+        }
+      })
+    } else {
+      switch (key) {
+        case 'shipping':
+          isChecked
+            ? name === 'stateName'
+              ? setdata({
+                  ...data,
+                  billingAddress: {
+                    ...data?.shippingAddress,
+                    [name]: value
+                  },
+                  shippingAddress: {
+                    ...data?.shippingAddress,
+                    [name]: value
+                  }
+                })
+              : setdata({
+                  ...data,
+                  billingAddress: {
+                    ...data?.shippingAddress,
+                    [name]: value,
+                    stateName:
+                      name === 'country' && value !== 'US' ? '' : data?.shippingAddress?.stateName
+                  },
+                  shippingAddress: {
+                    ...data?.shippingAddress,
+                    [name]: value,
+                    stateName:
+                      name === 'country' && value !== 'US' ? '' : data?.shippingAddress?.stateName
+                  }
+                })
+            : name === 'stateName'
+            ? setdata({
+                ...data,
+                shippingAddress: {
+                  ...data?.shippingAddress,
+                  [name]: value
+                }
+              })
+            : setdata({
+                ...data,
+                shippingAddress: {
+                  ...data?.shippingAddress,
+                  [name]: value,
+                  stateName:
+                    name === 'country' && value !== 'US' ? '' : data?.shippingAddress?.stateName
+                }
+              })
 
-        break
-      case 'billing':
-        setdata({ ...data, billingAddress: { ...data?.billingAddress, [name]: value } })
-        break
-      case 'payment':
-        setdata({ ...data, paymentDetails: { ...data?.paymentDetails, [name]: value } })
+          break
+        case 'billing':
+          isChecked &&
+            data?.shippingAddress?.stateName === 'NC' &&
+            data?.shippingAddress?.[name] !== value &&
+            handleCheck({ target: { checked: false } })
+          name !== 'stateName'
+            ? setdata({
+                ...data,
+                billingAddress: {
+                  ...data?.billingAddress,
+                  [name]: value,
+                  stateName:
+                    name === 'country' && value !== 'US' ? null : data?.billingAddress?.stateName
+                },
+                billingAddressDup: {
+                  ...data?.billingAddressDup,
+                  [name]: value,
+                  stateName:
+                    name === 'country' && value !== 'US' ? null : data?.billingAddressDup?.stateName
+                }
+              })
+            : setdata({
+                ...data,
+                billingAddress: {
+                  ...data?.billingAddress,
+                  [name]: value
+                },
+                billingAddressDup: { ...data?.billingAddressDup, [name]: value }
+              })
 
-        break
-      default:
-        setdata({ ...data, [name]: value })
-        break
+          break
+        case 'payment':
+          setdata({ ...data, paymentDetails: { ...data?.paymentDetails, [name]: value } })
+
+          break
+        default:
+          setdata({ ...data, [name]: value })
+          break
+      }
     }
   }
 
@@ -87,8 +173,8 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
    */
   useEffect(() => {
     const basic = validateFields(data, BASIC_INFO)
-    const shipping = validateFields(data?.shippingAddress, SHIPPING_INFO_ADMIN)
-    const billing = validateFields(data?.billingAddress, BILLING_INFO_ADMIN)
+    // const shipping = validateFields(data?.shippingAddress, SHIPPING_INFO_ADMIN)
+    // const billing = validateFields(data?.billingAddress, BILLING_INFO_ADMIN)
     const payment = validateFields({ ...data?.paymentDetails, ...data?.paymentDetails }, [
       ...CARD_INFO_ADMIN,
       ...PAYMENT_INFO
@@ -96,11 +182,25 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
     setErrors({
       ...errors,
       basic: basic,
-      shipping: shipping,
-      billing: billing,
-      payment: checkIfEmpty(data?.paymentDetails?.paytraceId) ? payment : {}
+      // shipping: shipping,
+      // billing: isChecked ? {} : billing,
+      payment:
+        checkIfEmpty(data?.paymentDetails?.paytraceId) &&
+        !checkIfEmpty(data?.paymentDetails?.ccNumber)
+          ? payment
+          : {}
     })
+
+    if (
+      !checkIfEmpty(data?.paymentDetails?.expirationMonth) &&
+      !checkIfEmpty(data?.paymentDetails?.expirationYear) &&
+      parseInt(data?.paymentDetails?.expirationYear) === new Date().getFullYear() &&
+      parseInt(data?.paymentDetails?.expirationMonth) < new Date().getMonth() + 1
+    ) {
+      setErrors({ ...errors, payment: { ...payment, expirationMonth: 'Invalid expiry month' } })
+    }
   }, [data])
+
   /**
    * handle billing same as shipping checkbox
    * @param {*} e
@@ -108,8 +208,20 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
   const handleCheck = (e) => {
     setisChecked(e?.target.checked)
     e?.target?.checked
-      ? setdata({ ...data, billingAddress: data?.shippingAddress })
-      : setdata({ ...data, billingAddress: {} })
+      ? setdata({
+          ...data,
+          billingAddress: {
+            ...data?.shippingAddress,
+            isExemptionEligible: false,
+            NCResaleCertificate: null
+          }
+        })
+      : setdata({
+          ...data,
+          billingAddress: data?.shippingAddress,
+          isExemptionEligible: false,
+          NCResaleCertificate: null
+        })
   }
 
   /**
@@ -118,10 +230,10 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
   const handleSubmit = async () => {
     if (
       checkIfEmpty({
-        ...errors?.basic,
-        ...errors?.shipping,
-        ...errors?.billing,
-        ...errors?.payment
+        ...errors?.basic
+        // ...errors?.shipping,
+        // ...errors?.billing,
+        // ...errors?.payment
       })
     ) {
       const customer = JSON.parse(localStorage.getItem('addCustomer'))
@@ -130,35 +242,53 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
         lastName: customer?.lastName,
         email: customer?.email,
         paymentDetails: checkIfEmpty(customer?.paymentDetails?.paytraceId)
-          ? {
-              phone: customer?.paymentDetails?.phone,
-              creditCardData: {
-                ccNumber: route?.query?.ccNumber,
-                expirationMonth: customer?.paymentDetails?.expirationMonth,
-                expirationYear: customer?.paymentDetails?.expirationYear
-              },
-              billingAddressData: {
-                name: customer?.paymentDetails?.name,
-                streetAddress: customer?.paymentDetails?.streetAddress,
-                city: customer?.paymentDetails?.city,
-                stateCode: customer?.paymentDetails?.stateCode,
-                countryCode: customer?.paymentDetails?.country,
-                zip: customer?.paymentDetails?.zip
+          ? checkIfEmpty(customer?.paymentDetails?.ccNumber)
+            ? null
+            : {
+                phone: customer?.paymentDetails?.phone,
+                creditCardData: {
+                  ccNumber: route?.query?.ccNumber,
+                  expirationMonth: customer?.paymentDetails?.expirationMonth,
+                  expirationYear: customer?.paymentDetails?.expirationYear
+                },
+                billingAddressData: {
+                  name: customer?.paymentDetails?.name,
+                  streetAddress: customer?.paymentDetails?.streetAddress,
+                  city: customer?.paymentDetails?.city,
+                  stateCode: customer?.paymentDetails?.stateCode,
+                  countryCode: customer?.paymentDetails?.country,
+                  zip: customer?.paymentDetails?.zip
+                }
               }
-            }
           : null,
         shippingAddress: customer?.shippingAddress,
         billingAddress: customer?.billingAddress,
+        isExemptionEligible:
+          customer?.billingAddress?.stateName === 'NC'
+            ? customer?.billingAddress?.isExemptionEligible
+            : false,
+        ncResaleCertificate:
+          customer?.billingAddress?.stateName === 'NC'
+            ? customer?.billingAddress?.NCResaleCertificate
+            : '',
         payTraceId: customer?.paymentDetails?.paytraceId
       })
       if (res?.StatusCode === 400) {
-        localStorage.removeItem('addCustomer')
+        console.log(customer?.paymentDetails)
+        setdata({
+          ...customer,
+          paymentDetails: {
+            ...customer?.paymentDetails,
+            ccNumber: customer?.paymentDetails?.ccNumber
+          }
+        })
+        setisChecked(customer?.isChecked)
         checkIfEmpty(res?.Response?.ValidationErrors)
           ? NotificationManager.error(res?.Response?.Message, '', '2000')
           : res?.Response?.ValidationErrors?.map((val) => {
               NotificationManager.error(val, '', 10000)
             })
-        setdata({ ...customer, paymentDetails: { ...customer?.paymentDetails, ccNumber: null } })
+        localStorage.removeItem('addCustomer')
       }
       if (res?.StatusCode === 500) {
         localStorage.removeItem('addCustomer')
@@ -166,9 +296,24 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
         setdata({ ...customer, paymentDetails: { ...customer?.paymentDetails, ccNumber: null } })
       }
       if (res?.statusCode === 200) {
-        localStorage.removeItem('addCustomer')
-        NotificationManager.success('Customer has been added', '', '2000')
-        route?.push('/admin/customerList')
+        if (res?.response?.isPayTraceError) {
+          localStorage.removeItem('addCustomer')
+          NotificationManager.success(
+            'User added successfully but there was a PayTrace error. Please fill in the payment details again.',
+            '',
+            '3000'
+          )
+          // res?.response?.payTraceErrors?.map((val) =>
+          //   NotificationManager.error(val?.value, '', '2000')
+          // )
+          route?.push(
+            `/admin/customerList/${res?.response?.userGuid}?customerGuid=${res?.response?.customerGuid}`
+          )
+        } else {
+          localStorage.removeItem('addCustomer')
+          NotificationManager.success('Customer has been added', '', '2000')
+          route?.push('/admin/customerList')
+        }
       }
     }
   }
@@ -205,6 +350,7 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
               handleChange={(name, value) => handleChange(name, value, 'billing')}
               errors={errors?.billing}
               data={data?.billingAddress}
+              isNorthCarolina={data?.shippingAddress?.stateName === 'NC'}
               isChecked={isChecked}
               countryList={countryList}
               states={states}
@@ -220,9 +366,7 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
                 handleSubmit={handleSubmit}
                 data={{
                   creditCardData: {
-                    ccNumber: `${data?.paymentDetails?.ccNumber}`.includes('**')
-                      ? data?.paymentDetails?.ccNumber
-                      : null,
+                    ccNumber: data?.paymentDetails?.ccNumber,
                     expirationMonth: data?.paymentDetails?.expirationMonth,
                     expirationYear: data?.paymentDetails?.expirationYear,
                     name:
@@ -241,11 +385,18 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
                   paytraceId: data?.paymentDetails?.paytraceId
                 }}
                 countryList={countryList}
+                disablePaytraceId={
+                  !checkIfEmpty(data?.paymentDetails?.ccNumber) &&
+                  checkIfEmpty(data?.paymentDetails?.paytraceId)
+                    ? true
+                    : false
+                }
+                disableCardValue={!checkIfEmpty(data?.paymentDetails?.paytraceId)}
               />
             </Grid>
           </Grid>
           <div className={classes.btn_Save}>
-            <Button onClick={() => setpopup(true)} variant='contained' style={{ marginRight: 8 }}>
+            <Button onClick={() => setpopup(true)} style={{ marginRight: 8 }}>
               cancel
             </Button>
             <Button
@@ -253,12 +404,13 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
               disabled={
                 !checkIfEmpty({
                   ...errors?.basic,
-                  ...errors?.shipping,
-                  ...errors?.billing
-                }) ||
-                (checkIfEmpty(data?.paymentDetails?.paytraceId) && !checkIfEmpty(errors?.payment))
+                  // ...errors?.shipping,
+                  ...errors?.payment
+                })
               }
-              onClick={() => localStorage.setItem('addCustomer', JSON.stringify(data))}
+              onClick={() =>
+                localStorage.setItem('addCustomer', JSON.stringify({ ...data, isChecked }))
+              }
               variant='contained'
             >
               Save
@@ -266,19 +418,21 @@ function CreateCustomer({ getCountryList, getStateList, AddCustomer }) {
           </div>
         </form>
 
-        <Modal onClose={() => setpopup(true)} open={popup}>
-          <Box display='flex' p={1}>
-            <Box m={1}>
-              <Icon icon='warning' size={20} />
+        <Modal handleClose={() => setpopup(false)} open={popup}>
+          <Box display='flex' p={1} alignItems='center' width='100%'>
+            <Box mr={1}>
+              <Image src={CancelPopup} alt='Cancel' height={101} width={101} />
             </Box>
-            <Typography variant='h4'>Are you sure you want to cancel ?</Typography>
+            <Typography variant='h3' className={classes.popupCancel_Text}>
+              Are you sure you want to cancel ?
+            </Typography>
           </Box>
-          <Button onClick={() => route?.push('/admin/customerList')} variant='contained'>
-            Yes
-          </Button>
-          <Button onClick={() => setpopup(false)} variant='contained'>
-            No
-          </Button>
+          <div className={classes.popupCancel_Btns}>
+            <Button onClick={() => route?.push('/admin/customerList')} variant='contained'>
+              Yes
+            </Button>
+            <Button onClick={() => setpopup(false)}>No</Button>
+          </div>
         </Modal>
         {/* <!--new--> */}
       </Layout>

@@ -8,8 +8,8 @@ import SearchArea from 'components/searchArea'
 import { TABLE_TITLES } from 'constants/tableValue'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
-import { connect } from 'react-redux'
-import { fetchAllOrders } from 'redux/actions/admin/orderActions'
+import { connect, useSelector } from 'react-redux'
+import { fetchAllOrders, updateAdminOrderQuery } from 'redux/actions/admin/orderActions'
 import { style } from 'styles/orderList'
 import clsx from 'clsx'
 import { NotificationManager } from 'react-notifications'
@@ -18,13 +18,14 @@ import Icon from 'icomoons/Icon'
 import OrderFilter from 'components/pages/adminPortal/order/orderFilter'
 import { checkIfEmpty, getBase64 } from 'utils/helpers'
 import { cancelOrders, downloadXlsxFile } from 'redux/actions/orderActions'
+
 const useStyles = style
 
 /**
  * Orders
  * @returns
  */
-function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQuery }) {
+function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, updateAdminOrderQuery }) {
   const classes = useStyles()
   const [loader, setloader] = useState(false)
   const [toggleModal, settoggleModal] = useState(false)
@@ -32,19 +33,13 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
   const [filter, setfilter] = useState(false)
   const route = useRouter()
   const [tableLoader, settableLoader] = useState(false)
-
-  const [query, setquery] = useState({
-    sortColumn: 'orderDate',
-    sortDirection: 'desc',
-    pageIndex: 0,
-    pageSize: 10,
-    customerId: null,
-    createdFrom: new Date(new Date().setDate(new Date().getDate() - 30)),
-    createdTill: new Date()
-  })
+  const adminQuery = useSelector((state) => state?.adminOrders?.adminOrderQuery)
+  const [tableTitles, settableTitles] = useState(TABLE_TITLES['ADMIN_ORDER_LIST'])
+  const [isSort, setIsSort] = useState(5)
 
   useEffect(async () => {
-    const res = await fetchAllOrders(query)
+    await updateAdminOrderQuery(adminQuery)
+    const res = await fetchAllOrders(adminQuery)
     if (res) {
       setloader(false)
     }
@@ -66,7 +61,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
       })
       if (res?.statusCode === 200) {
         NotificationManager.success('Order has been cancelled', '', 2000)
-        const res = await fetchAllOrders(query)
+        const res = await fetchAllOrders(adminQuery)
         if (res) {
           settoggleModal(false)
           setdata({})
@@ -88,10 +83,22 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
    * sortFunction
    * @param {*} titleObj
    */
-  const sortFunction = async (titleObj) => {
+  const sortFunction = async (titleObj, key) => {
+    console.log(titleObj)
+    const newTitleObj = tableTitles.map((obj) => {
+      if (obj.id === titleObj.id) {
+        return {
+          ...obj,
+          isAscending: key
+        }
+      }
+      return { ...obj, isAscending: false }
+    })
+    settableTitles(newTitleObj)
+    setIsSort(titleObj.id)
     handleAllApis({
       sortColumn: titleObj?.apiName,
-      sortDirection: query?.sortDirection === 'desc' ? 'asc' : 'desc'
+      sortDirection: key
     })
   }
 
@@ -99,19 +106,22 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
    * handleSearch
    * @param {*} param0
    */
-  const handleSearch = async ({ target }) => {
-    handleAllApis({ searchKey: target.value, pageIndex: 0 })
+  const handleSearch = ({ target }) => {
+    handleAllApis({
+      searchKey: target.value,
+      pageIndex: target.value === '' ? adminQuery?.pageIndex : 0
+    })
   }
 
   const handleAllApis = async (newQuery) => {
     if (navigator.onLine) {
       setloader(true)
       const res = await fetchAllOrders({
-        ...query,
+        ...adminQuery,
         ...newQuery
       })
-      setquery({
-        ...query,
+      updateAdminOrderQuery({
+        ...adminQuery,
         ...newQuery
       })
       if (res) {
@@ -138,7 +148,8 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
           break
         case 3:
           const res = await downloadXlsxFile({
-            orderGuid: item?.guid
+            orderGuids: [item?.guid],
+            timeZoneOffset: new Date().getTimezoneOffset() * -1
           })
           if (res?.statusCode >= 200 && res?.statusCode <= 300 && res?.response) {
             const {
@@ -187,7 +198,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
         createdFrom: date?.from ? fromUtc : null,
         createdTill: date?.to ? toUtc : null,
         pageIndex: 0,
-        pageSize: 10
+        pageSize: adminQuery?.pageSize
       })
     } else {
       handleNonetwork()
@@ -197,6 +208,15 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
   const rerenderPage = async (link) => {
     if (navigator?.onLine) {
       if (link === '/admin/orders') route.reload()
+      updateAdminOrderQuery({
+        sortColumn: 'orderDate',
+        sortDirection: 'desc',
+        pageIndex: 0,
+        pageSize: 10,
+        customerId: null,
+        createdFrom: new Date(new Date().setDate(new Date().getDate() - 30)),
+        createdTill: new Date()
+      })
     }
   }
 
@@ -215,7 +235,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
                   placeholder='Search'
                   handleSearch={handleSearch}
                   className={classes.searchOrder}
-                  searchValue={orderQuery.searchKey ? orderQuery.searchKey : ''}
+                  searchValue={adminQuery.searchKey ? adminQuery.searchKey : ''}
                 />
                 <div className={classes.order_Btn}>
                   <Button
@@ -231,10 +251,10 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
                 {filter && (
                   <OrderFilter
                     appliedFilters={{
-                      from: query?.createdFrom ? moment(query?.createdFrom).toDate() : '',
-                      to: query?.createdTill ? moment(query?.createdTill).toDate() : '',
-                      orderType: query?.orderType?.toString() || '0',
-                      sources: query?.orderSource
+                      from: adminQuery?.createdFrom ? moment(adminQuery?.createdFrom).toDate() : '',
+                      to: adminQuery?.createdTill ? moment(adminQuery?.createdTill).toDate() : '',
+                      orderType: adminQuery?.orderType?.toString() || '0',
+                      sources: adminQuery?.orderSource
                     }}
                     apiCall={handleApiCall}
                     setfilter={() => setfilter(false)}
@@ -246,7 +266,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
                         createdFrom: qry?.from,
                         createdTill: qry?.to,
                         pageIndex: 0,
-                        pageSize: 10
+                        pageSize: adminQuery?.pageSize
                       })
                     }}
                   />
@@ -259,7 +279,8 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
           <div className={classes.tableWrapper}>
             <DataTable
               sortFunction={sortFunction}
-              tableTitles={TABLE_TITLES['ADMIN_ORDER_LIST']}
+              isAscDescSort={true}
+              tableTitles={tableTitles}
               lists={orders?.orders?.map((val) =>
                 val?.source === 5 ? { ...val, displayId: `${val?.displayId} *` } : val
               )}
@@ -271,6 +292,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
                 { status: 3, label: 'Download', icon: 'file_download', key: 'download' },
                 { status: 2, key: 'admin_cancelled', label: 'Cancel', icon: 'delete' }
               ]}
+              isSort={isSort}
             />
             {orders && orders.totalCount ? (
               <>
@@ -292,13 +314,12 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
             ) : null}
           </div>
           {/* <!--table--> */}
-
           {/* <!--pagination--> */}
           {!checkIfEmpty(orders?.orders) && (
             <div className={classes.tabPagination}>
               <Pagination
-                pageSize={query?.pageSize}
-                currentPage={query?.pageIndex}
+                pageSize={adminQuery?.pageSize}
+                currentPage={adminQuery?.pageIndex}
                 handleOnClick={async (index) => {
                   if (navigator?.onLine) {
                     await setloader(true)
@@ -351,7 +372,7 @@ function Orders({ fetchAllOrders, orders, cancelOrders, downloadXlsxFile, orderQ
             </Grid>
             <Grid item xs={12} sm={12} md={4} lg={4} xl={4}>
               <Typography variant='h4' className={classes.orderLabel}>
-                Order #
+                Merch maker #
               </Typography>
               <Typography variant='body2' className={classes.orderContent}>
                 {data?.displayId || '---'}
@@ -436,7 +457,8 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   fetchAllOrders,
   cancelOrders,
-  downloadXlsxFile
+  downloadXlsxFile,
+  updateAdminOrderQuery
 }
 //Export
 export default connect(mapStateToProps, mapDispatchToProps)(Orders)

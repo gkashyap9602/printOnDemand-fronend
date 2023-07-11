@@ -38,6 +38,25 @@ export const style = makeStyles((theme) => ({
     alignItems: 'baseline',
     flexWrap: 'wrap'
   },
+  '@media screen and (max-width:399px)': {
+    btns_Grup: {
+      width: '100%',
+      '&:first-child': {
+        marginBottom: 10,
+        marginTop: 10
+      },
+      '& $btn_Store.MuiButton-root': {
+        width: '100%'
+      }
+    }
+  },
+  '@media screen and (max-width:500px)': {
+    btns_Grup: {
+      '&:first-child': {
+        marginTop: 10
+      }
+    }
+  },
   searchStore_Filter: {
     marginTop: 0
   },

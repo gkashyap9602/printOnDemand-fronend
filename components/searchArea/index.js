@@ -8,10 +8,11 @@ import { useDebounce } from 'use-debounce'
 
 const useStyles = style
 
-const SearchArea = ({ placeholder, className, handleSearch, searchValue = '' }) => {
+const SearchArea = ({ placeholder, className, handleSearch, searchValue = undefined }) => {
   const classes = useStyles()
-  const [value, setvalue] = useState(searchValue)
+  const [value, setvalue] = useState(null)
   const [debouncedText] = useDebounce(value, 1000)
+  const [isType, setisType] = useState(false)
 
   useEffect(() => {
     setvalue(searchValue)
@@ -21,7 +22,9 @@ const SearchArea = ({ placeholder, className, handleSearch, searchValue = '' }) 
   }, [searchValue])
 
   useEffect(() => {
-    onSearch()
+    if (debouncedText !== null || undefined) {
+      isType && onSearch()
+    }
   }, [debouncedText])
 
   const onSearch = () => {
@@ -47,6 +50,7 @@ const SearchArea = ({ placeholder, className, handleSearch, searchValue = '' }) 
         inputProps={{ 'aria-label': 'search' }}
         onChange={(e) => {
           setvalue(e.target.value)
+          setisType(true)
         }}
       />
     </div>

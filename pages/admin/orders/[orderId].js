@@ -93,7 +93,7 @@ function OrderDetails({ fetchOrderDetails, order, cancelOrders }) {
           <div style={{ flexGrow: 1 }}>
             <div className={classes.orderHead}>
               <Typography variant='h3'>
-                Order #{order?.displayId}{' '}
+                Merch maker# {order?.displayId}{' '}
                 <span className={classes.spanOrder}>
                   {(() => {
                     switch (order?.status) {
@@ -290,7 +290,7 @@ function OrderDetails({ fetchOrderDetails, order, cancelOrders }) {
             </Grid>
             <Grid item xs={12} sm={12} md={4} lg={4} xl={4}>
               <Typography variant='h4' className={classes.orderLabel}>
-                Order #
+                Merch maker #
               </Typography>
               <Typography variant='body2' className={classes.orderContent}>
                 {order?.displayId || '---'}

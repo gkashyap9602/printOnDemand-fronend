@@ -66,11 +66,14 @@ export const style = makeStyles((theme) => ({
     backgroundSize: 'cover',
     backgroundPosition: 'bottom',
     position: 'absolute',
-    bottom: 0,
+    bottom: '125px',
     right: 0,
     width: '232px',
     height: '208px',
-    opacity: 0.6
+    opacity: 0.6,
+    '@media screen and (max-width:756px)': {
+      position: 'revert'
+    }
   },
   faqLabel: {
     margin: '5px'

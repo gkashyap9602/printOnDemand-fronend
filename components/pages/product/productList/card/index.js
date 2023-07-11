@@ -86,7 +86,7 @@ const CardBlock = ({ item }) => {
             query:
               route?.query.subcatalog !== 'subcategory' && route?.query.subcategory
                 ? { subcategory: route?.query.subcategory }
-                : { isGlobalSearch: true }
+                : { isGlobalSearch: route?.query?.search }
           })
         }
       >

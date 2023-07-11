@@ -20,6 +20,7 @@ import Modal from 'components/modal'
 import AlertImg from '/static/images/alert-image.png'
 import Image from 'next/image'
 import { isActiveInternet } from 'utils/helpers'
+import { usePrevious } from 'utils/hooks'
 
 const useStyles = style
 
@@ -38,12 +39,16 @@ const Store = ({
   const [isOpenDeleteModal, setIsOpenDeleteModal] = useState(false)
   const [deleteBtnLoader, setDeleteBtnLoader] = useState(false)
   const [isRemoveItem, setIsRemoveItem] = useState({})
+  const previousDetailsUser = usePrevious(userDetails)
 
   /**
    * Fetch all connected store
    */
   useEffect(() => {
-    if (userDetails?.customerGuid) {
+    if (
+      userDetails?.customerGuid &&
+      JSON.stringify(previousDetailsUser) !== JSON.stringify(userDetails)
+    ) {
       const getAll = async () => {
         const data = {
           customerGuid: userDetails?.customerGuid,
@@ -106,6 +111,11 @@ const Store = ({
     setLoader(true)
     if (200 <= updateRes?.statusCode && updateRes?.statusCode <= 300) {
       setUpdatedStatus(!updatedStatus)
+      const allStoresResponse = await getAllConnectedStores({
+        customerGuid: userDetails?.customerGuid,
+        storeType: null
+      })
+      allStoresResponse && setLoader(false)
       NotificationManager.success(
         `Successfully ${store.status === 1 ? 'disconnected' : 'connected'} the store`,
         '',
@@ -152,10 +162,15 @@ const Store = ({
   const removeStore = async () => {
     if (navigator.onLine) {
       setDeleteBtnLoader(true)
+      setLoader(true)
       const deleteResponse = await deleteShop(isRemoveItem?.guid)
       if (200 <= deleteResponse?.statusCode && deleteResponse?.statusCode <= 300) {
         setUpdatedStatus(!updatedStatus)
-        setLoader(true)
+        const allStoresResponse = await getAllConnectedStores({
+          customerGuid: userDetails?.customerGuid,
+          storeType: null
+        })
+        allStoresResponse && setLoader(false)
         handleModalClose()
         NotificationManager.success(`The store has been removed successfully.        `, '', 2000)
       }
@@ -185,6 +200,7 @@ const Store = ({
   /**
    * Re render page on sidebar click
    */
+
   const rerenderPage = async () => {
     if (navigator?.onLine) {
       if (userDetails?.customerGuid) {
@@ -212,7 +228,7 @@ const Store = ({
               <BreadCrumb route2={'List'} route1={'Stores'} />
             </div>
             <div className={classes.storeSearch}>
-              <div>
+              <div className={classes.btns_Grup}>
                 <Button
                   type='submit'
                   variant='contained'

@@ -8,7 +8,8 @@ import {
   Avatar,
   Tooltip,
   Button,
-  Typography
+  Typography,
+  LinearProgress
 } from '@material-ui/core'
 import PropTypes from 'prop-types'
 import Icon from 'icomoons/Icon'
@@ -58,6 +59,8 @@ import AlertPopup from 'components/pages/designTool/alertPopup'
 import productLibraryReducer from 'redux/reducers/productLibraryReducer'
 import ProgressLoader from 'components/progressLoader'
 
+import { generateMockupImages } from '../../components/canvas/utilFunctions.js'
+import LinearProgressLoader from 'components/progressLoader/LinearProgressLoader'
 const useStyles = style
 
 //tab
@@ -137,9 +140,14 @@ const DesignerTool = ({
   const canvasRef = useRef(null)
   const sceneRef = useRef(null)
   const progressRef = useRef(0)
-  const refs = { sceneRef, canvasRef, progressRef }
+  const linearProgressRef = useRef(null)
+  const [showLinearProgress, setShowLinearProgress] = useState(true)
+
+  const refs = { sceneRef, canvasRef, progressRef, linearProgressRef }
   //Background color props
-  const [fabricViewSelectedColor, setFabricViewSelectedColor] = useState('#000000')
+  const [fabricViewSelectedColor, setFabricViewSelectedColor] = useState(() =>
+    designerJSON?.designType === 2 ? designerJSON?.meshColor : '#FFFFFF'
+  )
   const [allFabricColor, setAllFabricColor] = useState('#000000')
   //fabric view props
   const [selectedView, setSelectedView] = useState('')
@@ -151,6 +159,7 @@ const DesignerTool = ({
   const [showPreview, setShowPreview] = useState(false)
   const [showPreviewLoader, setShowPreviewLoader] = useState(false)
   const [previewImages, setPreviewImages] = useState([])
+
   const viewNameFilterArray = ['panel']
   //Canvas props
   const handleChange = (event, newValue) => {
@@ -163,10 +172,11 @@ const DesignerTool = ({
     setCollapseLayer(false)
   }
   // layer close when clicking outside
-
   useEffect(() => {
     if (mode === 'create') {
-      setFabricViewSelectedColor('#FFFFFF')
+      setFabricViewSelectedColor(
+        designerJSON?.designType === 2 ? designerJSON?.meshColor : '#FFFFFF'
+      )
     } else {
       if (design.fabricEntireProduct.applyToAll)
         dispatch(changeAllColor(design.fabricEntireProduct.color))
@@ -223,11 +233,11 @@ const DesignerTool = ({
         setFabricViewSelectedColor(
           designModel?.savedDesign?.fabricViewColor[designModel?.savedDesign?.fabricViewSelected]
             ? designModel?.savedDesign?.fabricViewColor[
-                designModel?.savedDesign?.fabricViewSelected
-              ]
+            designModel?.savedDesign?.fabricViewSelected
+            ]
             : designerJSON?.meshColor
-            ? designerJSON?.meshColor
-            : '#FFFFFF'
+              ? designerJSON?.meshColor
+              : '#FFFFFF'
         )
     }
   }, [selectedView])
@@ -276,31 +286,33 @@ const DesignerTool = ({
   const handleShowPreview = () => {
     showLoader(true)
     setShowPreviewLoader(true)
-    if (
-      designerJSON.mockupModel &&
-      designerJSON.cameraViewPositions &&
-      designerJSON.cameraTargetViewPositions
-    ) {
-      if (sceneRef.current) {
-        sceneRef.current.generateMockup(canvasRef.current, designerJSON, () => {
-          Promise.all(
-            sceneRef.current.switchViewsAndTakeSnapShots(canvasRef.current, 'front')
-          ).then((res) => {
-            setTimeout(() => {
-              setPreviewImages(res)
-              showLoader(false)
-            }, 2000)
-          })
-        })
-      }
-    } else {
-      Promise.all(generateMockupImages(canvasRef, sceneRef, designerJSON)).then((res) => {
-        setTimeout(() => {
-          setPreviewImages(res)
-          showLoader(false)
-        }, 2000)
-      })
-    }
+    // TODO: THis is for generating mockups with human models in them.
+    // if (
+    //   designerJSON.mockupModel &&
+    //   designerJSON.cameraViewPositions &&
+    //   designerJSON.cameraTargetViewPositions
+    // ) {
+    //   if (sceneRef.current) {
+    //     sceneRef.current.generateMockup(canvasRef.current, designerJSON, () => {
+    //       Promise.all(
+    //         sceneRef.current.switchViewsAndTakeSnapShots(canvasRef.current, 'front')
+    //       ).then((res) => {
+    //         setTimeout(() => {
+    //           setPreviewImages(res)
+    //           showLoader(false)
+    //         }, 2000)
+    //       })
+    //     })
+    //   }
+    // } else {
+
+    // }
+    Promise.all(generateMockupImages(canvasRef, sceneRef, designerJSON)).then((res) => {
+      setTimeout(() => {
+        setPreviewImages(res)
+        showLoader(false)
+      }, 2000)
+    })
   }
 
   useEffect(() => {
@@ -309,21 +321,21 @@ const DesignerTool = ({
 
   const getViewTitle = (designerJSON, item, mode) => {
     try {
-      return mode === 'create'
+      return designerJSON.toolTip ? designerJSON.toolTip[item] : mode === 'create'
         ? designerJSON.size === 'default' || designerJSON.size === undefined
           ? (item = item)
           : item.split(designerJSON.size)[1] == '' || item.split(designerJSON.size)[1] === undefined
-          ? item.split('_' + designerJSON.size)[0]
-          : item.split(designerJSON.size + '_')[1].includes('panel')
-          ? item.split(designerJSON.size + '_')[1].replace('panel', '')
-          : item.split(designerJSON.size + '_')[1]
+            ? item.split('_' + designerJSON.size)[0]
+            : item.split(designerJSON.size + '_')[1].includes('panel')
+              ? item.split(designerJSON.size + '_')[1].replace('panel', '')
+              : item.split(designerJSON.size + '_')[1]
         : designerJSON.size === 'default' || designerJSON.size === undefined
-        ? (item = item)
-        : item.split(designerJSON.size)[1] === '' || item.split(designerJSON.size)[1] === undefined
-        ? item.split('_' + designerJSON.size)[0]
-        : item.split(designerJSON.size + '_')[1].includes('panel')
-        ? item.split(designerJSON.size + '_')[1].replace('panel', '')
-        : item.split(designerJSON.size + '_')[1]
+          ? (item = item)
+          : item.split(designerJSON.size)[1] === '' || item.split(designerJSON.size)[1] === undefined
+            ? item.split('_' + designerJSON.size)[0]
+            : item.split(designerJSON.size + '_')[1].includes('panel')
+              ? item.split(designerJSON.size + '_')[1].replace('panel', '')
+              : item.split(designerJSON.size + '_')[1]
     } catch (err) {
       console.log('Error')
     }
@@ -382,25 +394,16 @@ const DesignerTool = ({
                             <a className={classes.form_Link}>
                               <TooltipBootstrap
                                 title={
-                                  mode === 'create'
-                                    ? designerJSON.size === 'default' ||
+                                  designerJSON.toolTip ? designerJSON.toolTip[item] :
+                                    designerJSON.size === 'default' ||
                                       designerJSON.size === undefined
                                       ? (item = item)
                                       : item.split(designerJSON.size)[1] == '' ||
                                         item.split(designerJSON.size)[1] === undefined
-                                      ? item.split('_' + designerJSON.size)[0]
-                                      : item.split(designerJSON.size + '_')[1]?.includes('panel')
-                                      ? item.split(designerJSON.size + '_')[1]?.replace('panel', '')
-                                      : item.split(designerJSON.size + '_')[1]
-                                    : designerJSON.size === 'default' ||
-                                      designerJSON.size === undefined
-                                    ? (item = item)
-                                    : item.split(designerJSON.size)[1] === '' ||
-                                      item.split(designerJSON.size)[1] === undefined
-                                    ? item.split('_' + designerJSON.size)[0]
-                                    : item.split(designerJSON.size + '_')[1]?.includes('panel')
-                                    ? item.split(designerJSON.size + '_')[1]?.replace('panel', '')
-                                    : item.split(designerJSON.size + '_')[1]
+                                        ? item.split('_' + designerJSON.size)[0]
+                                        : item.split(designerJSON.size + '_')[1]?.includes('panel')
+                                          ? item.split(designerJSON.size + '_')[1]?.replace('panel', '')
+                                          : item.split(designerJSON.size + '_')[1]
                                 }
                               >
                                 <div className={classes.pdtViewImageTab}>
@@ -425,7 +428,7 @@ const DesignerTool = ({
                                       // width: '25%',
                                       objectFit: 'contain'
                                     }}
-                                    // objectFit='contain'
+                                  // objectFit='contain'
                                   />
                                 </div>
                               </TooltipBootstrap>
@@ -445,6 +448,7 @@ const DesignerTool = ({
                       fullWidth
                       startIcon={<Icon icon='eye-show' size={16} color='#babac9' />}
                       onClick={handleShowPreview}
+                      disabled={showLinearProgress}
                     >
                       Preview
                     </Button>
@@ -500,8 +504,22 @@ const DesignerTool = ({
                   </div>
                 </Grid>
                 <Grid item xs={12} sm={6} md={6} lg={6} xl={6} id='viewport'>
-                  <div>
-                    <canvas id={'3DCanvas'} className={classes.viewCanvas} />
+                  <div style={{ position: 'relative' }}>
+                    <div className={classes.canvasBar}>
+                      {showLinearProgress && (
+                        <LinearProgressLoader
+                          ref={linearProgressRef}
+                          initialValue={0}
+                          setShowLinearProgress={setShowLinearProgress}
+                          message={'Loading 3D model...'}
+                        />
+                      )}
+                    </div>
+                    <canvas
+                      id={'3DCanvas'}
+                      className={classes.viewCanvas}
+                      style={{ position: 'relative' }}
+                    />
                   </div>
                 </Grid>
               </Grid>
@@ -522,7 +540,7 @@ const DesignerTool = ({
                 <BuildBackground
                   fabricViewSelectedColor={fabricViewSelectedColor}
                   setFabricViewSelectedColor={setFabricViewSelectedColor}
-                  handleCollapse={() => setCollapseLayer(false)}
+                  handleCollapse={setCollapseLayer}
                   layerCloseHandler={layerCloseHandler}
                   mode={mode}
                 />
@@ -537,7 +555,7 @@ const DesignerTool = ({
                   setTextFont={setTextFont}
                   fontSize={fontSize}
                   setFontSize={setFontSize}
-                  handleCollapse={() => setCollapseLayer(false)}
+                  handleCollapse={setCollapseLayer}
                   layerCloseHandler={layerCloseHandler}
                 />
               </TabPanel>
@@ -627,6 +645,7 @@ const DesignerTool = ({
               variant='contained'
               className={classes.saveProduct}
               onClick={handleApprovalModal}
+              disabled={showLinearProgress}
             >
               Save product
             </Button>

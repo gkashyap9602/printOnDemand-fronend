@@ -228,7 +228,10 @@ const style = makeStyles((theme) => ({
     alignItems: 'center',
     width: '48%',
     marginRight: 4,
-    marginBottom: theme.spacing(1)
+    marginBottom: theme.spacing(1),
+    '@media screen and (min-width:1279px) and (max-width:1280px)': {
+      width: 'unset!important'
+    }
   },
   tempName: {
     width: '163px',

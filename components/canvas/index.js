@@ -4,7 +4,7 @@ import { svgModelConstants } from 'constants/svgModelConstants'
 import LoadScene from './scene.js'
 import * as THREE from 'three'
 import { useRouter } from 'next/router'
-import { generateMockupImages } from './utilFunctions.js'
+import { generateMockupImages, orientationIndicator } from './utilFunctions.js'
 
 import {
   updateAddOnsList,
@@ -35,7 +35,7 @@ import { addControlButtons } from './additionalControls.js'
 import { makeGreyScaleImage, cropAndAddImageToScene } from './clipImage.js'
 import { NotificationManager } from 'react-notifications'
 import { addEditProductToCanvas } from './addEditProduct.js'
-import {  parseJSON } from '../../utils/helpers'
+import { parseJSON } from '../../utils/helpers'
 import { v4 as uuidv4 } from 'uuid'
 
 
@@ -68,7 +68,7 @@ const DCanvas = React.forwardRef((props, ref) => {
     showProgressLoader
   } = props;
   const { canvasRef,
-    sceneRef, progressRef } = ref
+    sceneRef, progressRef, linearProgressRef } = ref
   let canvas
   let svgModels
 
@@ -137,7 +137,8 @@ const DCanvas = React.forwardRef((props, ref) => {
           canvasRef,
           changeFabricSVG,
           design.fabricViewSelected,
-          sceneRef
+          sceneRef,
+          design
         )
       }
     }
@@ -307,11 +308,14 @@ const DCanvas = React.forwardRef((props, ref) => {
       })
       svgModels = designerJSON
       canvas.currentSize = svgModels?.size
+      //print file bug fix
+      canvas.initialloadCanvasOffset = viewWidth
+      //print file bug fix
       canvasRef.current = canvas
       svgModels.transparentPrint ? canvas.transparentPrint = true : canvas.transparentPrint = false
       svgType = svgModels.default
       ctx = canvas.getContext('2D')
-      loadScene = new LoadScene(canvas, showLoader)
+      loadScene = new LoadScene(canvas, showLoader, linearProgressRef)
       sceneRef.current = loadScene
       canvas.renderAll()
       canvas.setDimensions({ width: viewWidth, height: viewHeight })
@@ -320,7 +324,7 @@ const DCanvas = React.forwardRef((props, ref) => {
         return item.clonedImage === true
       })) {
         startRendering = false
-      }
+      }     
       loadScene.preLoadTextures(true, baseURL + '/' + designerJSON.modelPath, designerJSON, renderOnceAfterLoadingCanvas, mode, baseURL)
       if (mode === "edit" || mode === 'duplicate') {
         const type = svgModels.types
@@ -353,11 +357,15 @@ const DCanvas = React.forwardRef((props, ref) => {
 
               addEditProductToCanvas(designModel, canvas, designDetails, addPatterns, () => {
 
+                if(svgModels.showIndicator){
+                  orientationIndicator(canvas)
+                }
                 activeGroup = canvas._objects.find(item => {
 
                   return item.name === svgType
                 })
-                renderOnceAfterLoadingCanvas('canvas')
+                showLoader(false)
+                designerJSON.designType === 2 ? renderOnceAfterLoadingCanvas("DTGCanvas") : renderOnceAfterLoadingCanvas('canvas')
                 canvas.layers = designDetails.layers
               }, showLoader, scaleMultiplier)
             }
@@ -383,6 +391,9 @@ const DCanvas = React.forwardRef((props, ref) => {
         })
         findCanvasParameters(canvas, svgType)
       } else {
+        if(svgModels.showIndicator){
+          orientationIndicator(canvas)
+        }
         scaleMultiplier = document.getElementById('2DCanvas')?.offsetWidth / 512
         changeSVGType(undefined, undefined, baseURL)
         findCanvasParameters()
@@ -396,7 +407,7 @@ const DCanvas = React.forwardRef((props, ref) => {
       canvas.on('after:render', () => {
         if (loadScene.model) {
           if (initialRender) {
-         
+
 
             canvas._objects.forEach((child) => {
               if (child.svgType !== svgType && child.svg === true) {
@@ -415,9 +426,13 @@ const DCanvas = React.forwardRef((props, ref) => {
             canvas.renderAll()
             setInitCanvasDone(true)
           }
-          const child = loadScene.model.children.find((item) => {
+          const child = loadScene.model?.children?.find((item) => {
             return item.name === svgType
           })
+
+          if (child === undefined) {
+            return
+          }
 
           if (child?.userData.initialColor) {
             child.material.color = new THREE.Color(0xffffff)
@@ -450,79 +465,61 @@ const DCanvas = React.forwardRef((props, ref) => {
     changeColorForProduct(imgColor, canvasRef, changeFabricSVG, svgType, sceneRef)
   }
 
+
   const startRenderingCanvasOnModel = () => {
 
-    if ((mode === "edit" || mode === 'duplicate') && startRendering) {
 
-      canvas._objects.forEach(child => {
+    // if ((mode === "edit" || mode === 'duplicate') && startRendering) {
 
-        if (!child.name?.includes("safeZone") && !child.guideLine) {
-          child.visible = true
-        }
-        if (child.clipImageParentUuid) {
-          child.visible = false
-        }
-        if (child.name?.includes("safeZone") && child.svgType === svgType) {
-          child.visible = true
-        }
+    //   canvas._objects.forEach(child => {
 
-      })
-      canvas.renderAll()
-      for (let key in svgModels.types) {
-        const meshToRender = loadScene?.model?.children.find(item => {
-          return item.name === key
-        })
-        meshToRender?.material?.map.needsUpdate = true
-        meshToRender?.material.needsUpdate = true
-        loadScene.renderer.render(loadScene.scene, loadScene.camera)
-      }
+    //     if (!child.name?.includes("safeZone") && !child.guideLine) {
+    //       child.visible = true
+    //     }
+    //     if (child.clipImageParentUuid) {
+    //       child.visible = false
+    //     }
+    //     if (child.name?.includes("safeZone") && child.svgType === svgType) {
+    //       child.visible = true
+    //     }
 
-      const fringes = loadScene?.model?.children.find(item => {
-        return item.name === "fringes"
-      })
-      if (fringes) {
-        fringes.material?.map?.needsUpdate = true
-        fringes.material?.needsUpdate = true
-      }
+    //   })
+    //   canvas.renderAll()
+    //   for (let key in svgModels.types) {
+    //     const meshToRender = loadScene?.model?.children.find(item => {
+    //       return item.name === key
+    //     })
+    //     meshToRender?.material?.map.needsUpdate = true
+    //     meshToRender?.material.needsUpdate = true
+    //     loadScene.renderer.render(loadScene.scene, loadScene.camera)
+    //   }
 
-      canvas._objects.forEach(child => {
+    //   const fringes = loadScene?.model?.children.find(item => {
+    //     return item.name === "fringes"
+    //   })
+    //   if (fringes) {
+    //     fringes.material?.map?.needsUpdate = true
+    //     fringes.material?.needsUpdate = true
+    //   }
 
-        if (child.svgType !== svgModels.default) {
-          child.visible = false
-        }
-      })
-      canvas.renderAll()
-      showLoader(false)
-    }
-  }
+    //   canvas._objects.forEach(child => {
 
-  const renderOnceAfterLoadingCanvas = (renderingObject) => {
-
-    if (renderingObject === 'canvas') {
-      canvasRendered = true
-    } else if (renderingObject === "3DModel") {
-      modelRendered = true
-    } else if (renderingObject === "DTGCanvas") {
-      DTGRendered = true
-    }
-    if (modelRendered && canvasRendered) {
-
-      startRenderingCanvasOnModel()
-    }
-    if (modelRendered && DTGRendered) {
-
-      startRenderingDTGCanvasOnModel()
-    }
-
-  }
-
-  const startRenderingDTGCanvasOnModel = () => {
+    //     if (child.svgType !== svgModels.default) {
+    //       child.visible = false
+    //     }
+    //   })
+    //   canvas.renderAll()
+    //   showLoader(false)
+    // }
+    canvas.discardActiveObject()
     canvas._objects.forEach(child => {
 
       if (!child.name?.includes("safeZone") && !child.guideLine) {
         child.visible = true
       }
-
+      if (child.clipImageParentUuid) {
+        child.visible = false
+      }
       if (child.name?.includes("safeZone") && child.svgType === svgType) {
         child.visible = true
       }
@@ -538,11 +535,211 @@ const DCanvas = React.forwardRef((props, ref) => {
       loadScene.renderer.render(loadScene.scene, loadScene.camera)
     }
 
+    const fringes = loadScene?.model?.children.find(item => {
+      return item.name === "fringes"
+    })
+    if (fringes) {
+      fringes.material?.map?.needsUpdate = true
+      fringes.material?.needsUpdate = true
+    }
+
     canvas._objects.forEach(child => {
 
-      if (child.svgType !== svgModels.default) {
-        child.visible = false
+      if (!svgType) {
+        if (child.svgType !== svgModels.default) {
+          child.visible = false
+        }
+      } else {
+        if (child.svgType !== svgType) {
+          child.visible = false
+        }
       }
+
+    })
+    repositionIndicatorText(canvas, svgType, svgModels)
+    canvas.renderAll()
+  }
+
+  const repositionIndicatorText = (canvas, svgType, svgModels) => {
+
+    const topText = canvas._objects.find(item => {
+      return item.indicator
+    })
+    const visibleSVG = canvas._objects.find(item => {
+      return item.name === svgType
+    })
+    
+    if(!visibleSVG || !topText){
+      return
+    }
+    (function(){
+      topText._objects.map((child)=>{
+        child.rotate(0)
+      })
+    })()
+    const flipBox=function(){
+      topText._objects.map((child)=>{
+        if(child.name==='top'){
+          child.rotate(-180)
+        }else{
+          child.rotate(180)
+        }
+      })
+    }
+    if(svgModels.position === "left"){
+
+      if(svgType === svgModels.topSVG){
+        topText.left = visibleSVG.getBoundingRect().left - topText.getBoundingRect().width - 7
+        topText.top = visibleSVG.top
+      }else if(svgType === svgModels.bottomSVG){
+        topText.left = visibleSVG.getBoundingRect().left - topText.getBoundingRect().width - 7
+        topText.top = visibleSVG.getBoundingRect().top + visibleSVG.getBoundingRect().height - topText.getBoundingRect().height
+        flipBox()   
+      }
+    }else if(svgModels.position === "mid"){
+      if(svgType === svgModels.topSVG){
+        topText.left = visibleSVG.getBoundingRect().left + visibleSVG.getBoundingRect().width/2 - topText.getBoundingRect().width/2
+        topText.top = visibleSVG.top - topText.getBoundingRect().height - 2
+      }else if(svgType === svgModels.bottomSVG){
+        topText.left = visibleSVG.getBoundingRect().left + visibleSVG.getBoundingRect().width/2 - topText.getBoundingRect().width/2
+        topText.top = visibleSVG.getBoundingRect().top + visibleSVG.getBoundingRect().height + 3
+        flipBox()
+      }
+    }
+   topText.visible = true
+   canvas.renderAll()
+  }
+
+  const renderOnceAfterLoadingCanvas = (renderingObject) => {
+
+    if (renderingObject === 'canvas') {
+      canvas._objects.forEach(child => {
+
+        if (!child.name?.includes("safeZone") && !child.guideLine) {
+          child.visible = true
+        }
+        if (child.clipImageParentUuid) {
+          child.visible = false
+        }
+        if (child.name?.includes("safeZone") && child.svgType === svgModels.default) {
+          child.visible = true
+        }
+        if (child.svgType !== svgModels.default) {
+          child.visible = false
+        }
+
+      })
+      // canvas.renderAll()
+      // if (renderingObject === "canvas") {
+      //   canvasRendered = true
+      // } else {
+      //   DTGRendered = true
+      // }
+      canvasRendered = true
+      setInitCanvasDone(true)
+      repositionIndicatorText(canvas, svgModels.default, svgModels)
+    } else if (renderingObject === "3DModel") {
+      modelRendered = true
+    } else if (renderingObject === "DTGCanvas") {
+      canvas._objects.forEach(child => {
+
+        if (!child.name?.includes("safeZone") && !child.guideLine) {
+          child.visible = true
+        }
+        if (child.clipImageParentUuid) {
+          child.visible = false
+        }
+        if (child.name?.includes("safeZone") && child.svgType === svgModels.default) {
+          child.visible = true
+        }
+        if (child.svgType !== svgModels.default) {
+          child.visible = false
+        }
+
+      })
+      canvas.renderAll()
+      setInitCanvasDone(true)
+      DTGRendered = true
+    }
+    if (modelRendered && canvasRendered) {
+
+      startRenderingCanvasOnModel()
+    }
+    if (modelRendered && DTGRendered) {
+
+      startRenderingDTGCanvasOnModel()
+    }
+
+  }
+
+  const startRenderingDTGCanvasOnModel = () => {
+    if (svgModels.designType && svgModels.types.length === 1) {
+      canvas._objects.forEach(child => {
+
+        if (!child.name?.includes("safeZone") && !child.guideLine && !child.invisibleOnModel && !child.clipImageParentUuid) {
+          child.visible = true
+        }
+
+        if (child.name?.includes("safeZone") && child.svgType === svgType) {
+          child.visible = true
+        }
+
+      })
+      canvas.renderAll()
+      for (let key in svgModels.types) {
+        const meshToRender = loadScene?.model?.children.find(item => {
+          return item.name === key
+        })
+        meshToRender?.material?.map.needsUpdate = true
+        meshToRender?.material.needsUpdate = true
+        loadScene.renderer.render(loadScene.scene, loadScene.camera)
+      }
+
+    } else {
+      Object.keys(svgModels.types).forEach(designPanels => {
+        canvas.discardActiveObject()
+        canvas._objects.forEach(canvasChild => {
+
+          if (!canvasChild.name?.includes("safeZone") && !canvasChild.guideLine && !canvasChild.invisibleOnModel && !canvasChild.clipImageParentUuid && canvasChild.svgType === designPanels) {
+            canvasChild.visible = true
+          } else {
+            canvasChild.visible = false
+          }
+
+          // if (canvasChild.name?.includes("safeZone")) {
+          //   if (svgType) {
+          //     if (canvasChild.svgType === svgType) {
+          //       canvasChild.visible = true
+          //     } 
+          //   } else {
+          //     if (canvasChild.svgType === svgModels.default) {
+          //       canvasChild.visible = true
+          //     }
+          //   }
+          // }
+        })
+        canvas.renderAll()
+        loadScene.model?.getObjectByName(designPanels)?.material?.map.needsUpdate = true
+        loadScene.model?.getObjectByName(designPanels)?.material?.needsUpdate = true
+        loadScene.renderer.render(loadScene.scene, loadScene.camera)
+      })
+    }
+
+    canvas._objects.forEach(child => {
+
+      if (svgType) {
+
+        if (child.svgType !== svgType || child.clipImageParentUuid || child.invisibleOnModel) {
+          child.visible = false
+        } else {
+          child.visible = true
+        }
+      } else {
+        if (child.svgType !== svgModels.default) {
+          child.visible = false
+        }
+      }
+
     })
     canvas.renderAll()
     showLoader(false)
@@ -617,7 +814,7 @@ const DCanvas = React.forwardRef((props, ref) => {
       rectToClipWith.setControlsVisibility({ mtr: false, rotate90Controls: false, rotateNegative90Controls: false, resetControls: false })
       rectToClipWith.imageUuid = imageToClip.uuid
       rectToClipWith.imageClipHelper = true
-    if (imageToClip.angle === 0) {
+      if (imageToClip.angle === 0) {
         rectToClipWith.left = Math.max(activeGroup.getBoundingRect().left, imageToClip.getBoundingRect().left)
         rectToClipWith.top = Math.max(activeGroup.getBoundingRect().top, imageToClip.getBoundingRect().top)
         rectToClipWith.width = Math.min(activeGroup.getBoundingRect().width, imageToClip.getBoundingRect().width)
@@ -666,7 +863,7 @@ const DCanvas = React.forwardRef((props, ref) => {
       const parentImageAdded = canvas._objects.find(item => {
         return item.uuid === rectToClip.imageUuid
       })
-      parentImageAdded.clipImageParentUuid = null
+      parentImageAdded.clipImageParentUuid = undefined
       parentImageAdded.clipDiff = null
       const imageClipHelper = canvas._objects.filter(item => {
         return item.imageClipHelper
@@ -826,7 +1023,7 @@ const DCanvas = React.forwardRef((props, ref) => {
           }
         })
       }
- 
+
       canvas.remove(objectToRemove)
 
       canvas.renderAll()
@@ -1109,8 +1306,13 @@ const DCanvas = React.forwardRef((props, ref) => {
         if (child.clipImageParentUuid) {
           child.visible = false
         }
+
+        if(child.alwaysVisible || child.mappingSVG === svgType){
+          child.visible = true
+        }
       })
       canvas.renderAll()
+      repositionIndicatorText(canvas, svgType, svgModels)
     },
     [canvas]
   )
@@ -1144,10 +1346,14 @@ const DCanvas = React.forwardRef((props, ref) => {
     if ((canvasMode === "edit" || canvasMode === 'duplicate') && finalPatternAdded) {
 
       startRendering = true
-      if (loadScene.model !== undefined) {
-        renderOnceAfterLoadingCanvas('canvas')
-        canvas.renderAll()
-      }
+      showLoader(false)
+      // if (loadScene.model !== undefined) {
+      //   console.log("svgmodel constants is", svgModels.designType)
+      //   svgModels.designType === 2 ? renderOnceAfterLoadingCanvas('DTGCanvas') : renderOnceAfterLoadingCanvas('canvas')
+      //   canvas.renderAll()
+      // }
+      svgModels.designType === 2 ? renderOnceAfterLoadingCanvas('DTGCanvas') : renderOnceAfterLoadingCanvas('canvas')
+      canvas.renderAll()
 
 
     }
@@ -1164,8 +1370,9 @@ const DCanvas = React.forwardRef((props, ref) => {
     }
 
     const imgPath = imageRef.file
+    console.log(new Date())
     fabric.Image.fromURL(imgPath, function (img) {
-
+      console.log(new Date())
       img.set('dirty', true)
       canvas.add(img)
 
@@ -1213,8 +1420,19 @@ const DCanvas = React.forwardRef((props, ref) => {
 
   }, [canvas])
 
-  const addPatterns = useCallback((spacing, object, patternType, canvasPassed, selectedView, selectedAddon, layers, canvasMode, finalPatternAdded) => {
+  /**
+ * @description - Funtion to apply image pattern
+ * @param {number} spacing - pattern spacing
+ * @param {Object} object - For edit when reopening design we are saving only a single image in design. This contains that so the patterns can be rebuild
+ * @param {String} patternType - type of pattern 
+ *  @param {Boolean} finalPatternAdded - This is to ensure every pattern has been added and there is nothing left, so that we can render 2Dcanvas onto 3Dmodel and  
+  *  @param {String} canvasMode - Create, edit or duplicate mode
+  * rest are self explanatory
+  * @returns
+ */
+  const addPatterns = useCallback((spacing, object, patternType, canvasPassed, selectedView, selectedAddon, layers, canvasMode, finalPatternAdded, checkifNonetoRemove) => {
 
+    showLoader(true)
     let selectedObjectAngle
     activeGroup = canvas._objects.find((item) => {
       return item.name === selectedView
@@ -1229,13 +1447,13 @@ const DCanvas = React.forwardRef((props, ref) => {
     }
 
     [...canvas._objects].forEach((child) => {
-      if (child.svgType === selectedView && child.clonedImage && child !== canvas.getActiveObject() && child.parentImageUuid === canvas.getActiveObject()?.parentImageUuid) {
+      if (!checkifNonetoRemove && child.svgType === selectedView && child.clonedImage && child !== canvas.getActiveObject() && child.parentImageUuid === canvas.getActiveObject()?.parentImageUuid) {
         canvas.remove(child)
       }
     })
 
     const boundingRectForPattern = activeGroup.getBoundingRect()
-  
+
     selectedObjectAngle = activeObjectToRepeat.angle
     if (!activeObjectToRepeat.clonedImage) {
       activeObjectToRepeat.originalImage = true
@@ -1322,7 +1540,7 @@ const DCanvas = React.forwardRef((props, ref) => {
               activeObjectLeft += (imageSpacing + objectWidth)
               addClonedObjectToCanvas(mirrorImage, xMirrorFlip, "Horizontal")
             } else {
-
+              showLoader(false)
               rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
             }
           }
@@ -1343,6 +1561,7 @@ const DCanvas = React.forwardRef((props, ref) => {
               activeObjectTop += (imageSpacing + objectHeight)
               addClonedObjectToCanvas(mirrorImage, xMirrorFlip, "Vertical")
             } else {
+              showLoader(false)
               rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
             }
 
@@ -1481,6 +1700,7 @@ const DCanvas = React.forwardRef((props, ref) => {
           if (!patternToRightBottom && !patternToLeftBottom && !patternToRightTop && !patternToLeftTop && reArrangePattern) {
 
             reArrangePattern = false
+            showLoader(false)
             rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
           }
         } else {
@@ -1686,6 +1906,7 @@ const DCanvas = React.forwardRef((props, ref) => {
           if (!patternToRightBottom && !patternToLeftBottom && !patternToRightTop && !patternToLeftTop && reArrangePattern) {
 
             reArrangePattern = false
+            showLoader(false)
             rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
           }
         }
@@ -1718,6 +1939,9 @@ const DCanvas = React.forwardRef((props, ref) => {
         activeObjectLeft = activeObjectToRepeat.getBoundingRect().left + imageSpacing + objectWidth
         if (activeObjectLeft < boundingRectForPattern.left + boundingRectForPattern.width) {
           addClonedObjectToCanvas(mirrorImage, xMirrorFlip, "Horizontal")
+        } else {
+          showLoader(false)
+          rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
         }
 
       }
@@ -1733,6 +1957,9 @@ const DCanvas = React.forwardRef((props, ref) => {
         if (activeObjectTop < imageTop + boundingRectForPattern.height) {
 
           addClonedObjectToCanvas(mirrorImage, xMirrorFlip, "Vertical")
+        } else {
+          showLoader(false)
+          rearrangeObjects(layers, selectedView, undefined, canvasMode, finalPatternAdded)
         }
       }
     } else if (patternType === 'HalfDrop') {
@@ -1760,12 +1987,16 @@ const DCanvas = React.forwardRef((props, ref) => {
       dispatch(updateAddOnsList("image", selectedAddon))
     }
   }, [canvas])
-
+  /**
+ * @description - Funtion to generate clip paths of each SVG. THis is the attached to clipPath property of each object of canvas
+  *@param {svgType} - view
+  * @returns
+ */
   const changeSVGType = (svgType, callBack, baseURL) => {
     //switch size testing begin
     let type
     let safeZone
-   
+
     type = svgModels.types
     safeZone = svgModels.safeZones
     for (let keys in type) {
@@ -1801,9 +2032,24 @@ const DCanvas = React.forwardRef((props, ref) => {
 
         if (svgModels.default === keys) {
           activeGroup = group
+          group.visible = true
+        } else {
+          group.visible = false
         }
+        // if(svgModels.showIndicator){
+        //   if(keys === svgModels.topSVG || ){
+
+        //     const topText = canvas._objects.find(item => {
+        //       return item.indicator
+        //     })
+
+        //     if(topText.)
+        //   }
+        // }
+
       })
 
+      // THis will fail in case of BackPack product as it has 5 outlines and 4 safeZones.
       if (safeZone[keys + 'SafeZone']) {
         fabric.loadSVGFromURL(baseURL + "/" + safeZone[keys + 'SafeZone'], (objects) => {
           let group = new fabric.util.groupSVGElements(objects)
@@ -1819,20 +2065,37 @@ const DCanvas = React.forwardRef((props, ref) => {
           canvas.add(group)
           group.visible = false
 
+          if (keys === svgModels.default) {
+            group.visible = true
+          } else {
+            group.visible = false
+          }
           if (keys === Object.keys(type)[Object.keys(type).length - 1] && callBack) {
 
             callBack()
           }
           if (keys === Object.keys(type)[Object.keys(type).length - 1] && svgModels.transparentPrint) {
-
+            showLoader(false)
             renderOnceAfterLoadingCanvas("DTGCanvas")
+          } else {
+            if (keys === Object.keys(type)[Object.keys(type).length - 1]) {
+              renderOnceAfterLoadingCanvas('canvas')
+              showLoader(false)
+            }
           }
+
         })
+      }
+      else {
+        if (keys === Object.keys(type)[Object.keys(type).length - 1]) {
+          renderOnceAfterLoadingCanvas('canvas')
+          showLoader(false)
+        }
       }
 
       canvas.renderAll()
     }
-    initialRender = true
+    //initialRender = true
   }
 
   const createFinalClipPath = useCallback(() => {
@@ -1883,8 +2146,15 @@ const DCanvas = React.forwardRef((props, ref) => {
   const generateJSON = async (design, designModel) => {
 
     let tempCanvas = canvasRef.current;
+    //print file bug fix
+    const initialCanvasWidth = tempCanvas._objects.find(item => {
+      return item.currentCanvasWidth
+    }) ? tempCanvas._objects.find(item => {
+      return item.currentCanvasWidth
+    }).currentCanvasWidth : tempCanvas.initialloadCanvasOffset
+    //print file bug fix
     tempCanvas._objects[0].currentCanvasWidth = document.getElementById('2DCanvas')?.offsetWidth
-    let canvasJSON = tempCanvas.toJSON(['uuid', 'svg', 'svgType', 'name', 'clonedImage', 'patternType', 'spacing', 'repeatingPattern', 'parentImageUuid', 'guideLine', 'clipImageParentUuid', 'clipDiff', 'baseImageParams', 'currentClip', 'currentCanvasWidth', 'transparentSVG'])
+    let canvasJSON = tempCanvas.toJSON(['uuid', 'svg', 'svgType', 'name', 'clonedImage', 'patternType', 'spacing', 'repeatingPattern', '  ', 'guideLine', 'clipImageParentUuid', 'clipDiff', 'baseImageParams', 'currentClip', 'currentCanvasWidth', 'transparentSVG'])
     canvasJSON['designDetails'] = JSON.parse(JSON.stringify(design))
 
     if (design.addons.image.length > 0) {
@@ -1899,6 +2169,25 @@ const DCanvas = React.forwardRef((props, ref) => {
       }
 
     }
+    //print file bug fix
+    if(tempCanvas.initialloadCanvasOffset !== document.getElementById('2DCanvas')?.offsetWidth){
+      const scaleFactor = document.getElementById('2DCanvas')?.offsetWidth / initialCanvasWidth
+      for(let i = 0; i < canvasJSON.objects.length; i++){
+        canvasJSON.objects[i].scaleX *= scaleFactor
+        canvasJSON.objects[i].scaleY *= scaleFactor
+        canvasJSON.objects[i].left *= scaleFactor
+        canvasJSON.objects[i].top *= scaleFactor
+  
+        if(canvasJSON.objects[i].clipPath){
+          canvasJSON.objects[i].clipPath.scaleX *= scaleFactor
+          canvasJSON.objects[i].clipPath.scaleY *= scaleFactor
+          canvasJSON.objects[i].clipPath.left *= scaleFactor
+          canvasJSON.objects[i].clipPath.top *= scaleFactor
+        }
+  
+      }
+    }
+    //print file bug fix
     canvasJSON.designDetails.selectedAddOn = {}
     canvasJSON.designDetails.uploadedImages = []
     canvasJSON.designDetails.saveProduct = false
@@ -1926,17 +2215,19 @@ const DCanvas = React.forwardRef((props, ref) => {
   const generatePrintFilesForDTGApparel = (productJSON, sizeList, canvas, sizesSelectedByUser, dpisOfSizesSelected) => {
 
     return new Promise((resolve, reject) => {
+      let progressBarUnit = 100 / sizesSelectedByUser.length
+      let progress = 0;
       canvas._objects.forEach(child => {
 
         if (child.svg && child.name?.includes("safeZone")) {
           child.visible = false
-        } else if (!child.guideLine && child.clipImageParentUuid !== null) {
+        } else if (!child.guideLine) {
           child.visible = true
         }
         if (child.clipImageParentUuid) {
           child.visible = false
         }
-  
+
         if (canvas.transparentPrint && child.transparentSVG) {
           child.opacity = 0
         }
@@ -1949,15 +2240,18 @@ const DCanvas = React.forwardRef((props, ref) => {
       fabric.Image.fromURL(aiFilePath, (finalOutDimensionFile) => {
         finalOutDimensionFile.visible = false
         canvas.backgroundColor = null
-  
+
         const maxDimension = Math.max(finalOutDimensionFile.width, finalOutDimensionFile.height)
         const maxDimensionInInches = maxDimension / dpisOfSizesSelected[selectedSVGGuid]
- 
+
         const types = Object.keys(productJSON.types)
+        if (types.length > 1) {
+          progressBarUnit = 100 / (sizesSelectedByUser.length * types.length)
+        }
         types.forEach(svgPanel => {
-  
+
           canvas._objects.forEach(child => {
-  
+
             if (child.svgType === svgPanel) {
               child.visible = true
             } else {
@@ -1978,26 +2272,35 @@ const DCanvas = React.forwardRef((props, ref) => {
             for (let i = 0; i < sizesSelectedByUser.length; i++) {
               finalPrintableImageList[sizesSelectedByUser[i]] = base64data.split(',')[1]
               finalPrintFileDimensions[sizesSelectedByUser[i]] = { width: finalOutDimensionFile.width, height: finalOutDimensionFile.height }
+              progress += progressBarUnit
+              progressRef.current.setProgress(progress)
+              progressRef.current.setMessage('Generating print files...')
             }
             if (svgPanel.includes("Front")) {
-              frontImage = {imageType: 3, finalPrintableImageList, finalPrintFileDimensions  }
+              //print file bug fix
+              const imageList = {...finalPrintableImageList}
+              frontImage = { imageType: 3, finalPrintableImageList: imageList, finalPrintFileDimensions }
+              //print file bug fix
             } else {
-              backImage = { imageType: 4, finalPrintableImageList, finalPrintFileDimensions }
+              //print file bug fix
+              const backImageList = {...finalPrintableImageList}
+              backImage = { imageType: 4, finalPrintableImageList: backImageList, finalPrintFileDimensions }
+              //print file bug fix
             }
             if (svgPanel === types[types.length - 1]) {
               resolve({ frontImage, backImage })
             }
           }
         })
-  
-  
+
+
       }, { crossOrigin: 'anonymous' })
     })
   }
 
   const createFinalPrintImages = async (productList, sizesSelectedByUser, dpisOfSizesSelected) => {
     return new Promise((resolve, reject) => {
-      const progressBarUnit = 100/sizesSelectedByUser.length
+      const progressBarUnit = 100 / sizesSelectedByUser.length
       let progress = 0;
       const scaleMultiplier = document.getElementById('2DCanvas')?.offsetWidth / 512
       const sizeList = []
@@ -2012,14 +2315,16 @@ const DCanvas = React.forwardRef((props, ref) => {
           designTemplateSVGList[child.name] = child
         }
       })
+      // size used to design (defaultDesignerJSON size - need to pass through function later)
       const currentSize = canvas.currentSize ? canvas.currentSize : "S"
+      // If the sizeList contains the defaultsize, generate the printfile for this size already.
       if (sizeList.includes(currentSize)) {
         canvas.clipPath = null
         canvas._objects.forEach(child => {
 
           if (child.svg && child.name?.includes("safeZone")) {
             child.visible = false
-          } else if (!child.guideLine && child.clipImageParentUuid !== null) {
+          } else if (!child.guideLine) {
             child.visible = true
           }
           if (child.clipImageParentUuid) {
@@ -2040,15 +2345,18 @@ const DCanvas = React.forwardRef((props, ref) => {
           finalOutDimensionFile.visible = false
           const maxDimension = Math.max(finalOutDimensionFile.width, finalOutDimensionFile.height)
           const maxDimensionInInches = maxDimension / dpisOfSizesSelected[selectedSVGGuid]
+          // These are items that should be visible inside the printfile like marking lines etc.
           let outLineSVGPath = productName.modelPath.replace("FBXModel", "Images/OutlineSVG")
           outLineSVGPath = outLineSVGPath.replace("fbx", "svg")
           fabric.loadSVGFromURL(designModel.baseURL + '/' + outLineSVGPath, (outlineSVG) => {
             const group = new fabric.util.groupSVGElements(outlineSVG)
             group.name = "outline_" + selectedSVGGuid
-            group.scaleX = group.scaleX * scaleMultiplier
-            group.scaleY = group.scaleY * scaleMultiplier
-            group.left = group.left * scaleMultiplier
-            group.top = group.top * scaleMultiplier
+            //print file bug fix
+            group.scaleX = group.scaleX * canvas.initialloadCanvasOffset/512
+            group.scaleY = group.scaleY * canvas.initialloadCanvasOffset/512
+            group.left = group.left * canvas.initialloadCanvasOffset/512
+            group.top = group.top * canvas.initialloadCanvasOffset/512
+            //print file bug fix
             group.setCoords()
             canvas.add(group)
             canvas.renderAll()
@@ -2059,7 +2367,7 @@ const DCanvas = React.forwardRef((props, ref) => {
             const reader = new FileReader()
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
-              progress+=progressBarUnit
+              progress += progressBarUnit
               progressRef.current.setProgress(progress)
               progressRef.current.setMessage('Generating print files...')
               var base64data = reader.result;
@@ -2095,6 +2403,10 @@ const DCanvas = React.forwardRef((props, ref) => {
 
   }
 
+  // size, designerJSON -> 
+  // load all the svgs of the above designerJSON (size for printfile needs to be generated)
+  // Eg: 2XL default -> generate use this to generate others.
+  // 
   const reAlignExistingTemplates = (productName, size, canvasJSON, designTemplateSVGList, currentSize, initial, productList, sizeList, resolve, selectedSVGGuid, sizesSelectedByUser, dpisOfSizesSelected, progress, progressBarUnit) => {
     const canvas = canvasRef.current
     if (!initial) {
@@ -2125,22 +2437,30 @@ const DCanvas = React.forwardRef((props, ref) => {
           group.svg = true
           group.fill = designTemplateSVGList[keys.replace(finalSize, currentSize)].fill
           group.svgType = keys
-          group.scaleX = group.scaleX * scaleMultiplier
-          group.scaleY = group.scaleY * scaleMultiplier
-          group.left = group.left * scaleMultiplier
-          group.top = group.top * scaleMultiplier
+          //print file bug fix
+          group.scaleX = group.scaleX * canvas.initialloadCanvasOffset/512
+          group.scaleY = group.scaleY * canvas.initialloadCanvasOffset/512
+          group.left = group.left * canvas.initialloadCanvasOffset/512
+          group.top = group.top * canvas.initialloadCanvasOffset/512
+          //print file bug fix
           group.setCoords()
           clipPath[keys] = new fabric.Path(group.d, { objectCaching: false })
           clipPath[keys].absolutePositioned = true
-          clipPath[keys].scaleX = clipPath[keys].scaleX * scaleMultiplier
-          clipPath[keys].scaleY = clipPath[keys].scaleY * scaleMultiplier
-          clipPath[keys].left = clipPath[keys].left * scaleMultiplier
-          clipPath[keys].top = clipPath[keys].top * scaleMultiplier
+          //print file bug fix
+          clipPath[keys].scaleX = clipPath[keys].scaleX * canvas.initialloadCanvasOffset/512
+          clipPath[keys].scaleY = clipPath[keys].scaleY * canvas.initialloadCanvasOffset/512
+          clipPath[keys].left = clipPath[keys].left * canvas.initialloadCanvasOffset/512
+          clipPath[keys].top = clipPath[keys].top * canvas.initialloadCanvasOffset/512
+          //print file bug fix
           group.setCoords()
           targetTemplateSVGList[group.name] = group
+
           canvas.add(group)
           canvas.sendToBack(group)
           group.visible = false
+          // If all the svgs for the current (size) is loaded, then call startAligningAndScaling
+          // size -> S, M, L
+          // SVG -> front, back
           if (Object.keys(targetTemplateSVGList).length === Object.keys(type).length) {
             canvas.renderAll()
 
@@ -2192,7 +2512,7 @@ const DCanvas = React.forwardRef((props, ref) => {
             item.originX = 'left'
             item.originY = 'top'
           }
-
+// Scale by how much we divide width of current size by target size for both width and height. Then take the max.
           let scaleXFactor
           let scaleYFactor
           if (templatesToRotate[templateName].angle === 90) {
@@ -2247,7 +2567,7 @@ const DCanvas = React.forwardRef((props, ref) => {
           const scaleXFactor = targetTemplateSVGList[item.replace(currentSize, finalSize)].width / designTemplateSVGList[item].width
           const scaleYFactor = targetTemplateSVGList[item.replace(currentSize, finalSize)].height / designTemplateSVGList[item].height
           patternGroup[item] = new fabric.Group()
-         
+
           patternGroup[item].left = designTemplateSVGList[item].left + designTemplateSVGList[item].getBoundingRect().width / 2
           patternGroup[item].top = designTemplateSVGList[item].top + designTemplateSVGList[item].getBoundingRect().height / 2
           patternGroup[item].originX = "center"
@@ -2268,7 +2588,7 @@ const DCanvas = React.forwardRef((props, ref) => {
             }
           }
 
-         
+
           patternGroup[item]._calcBounds()
 
           patternGroup[item].scaleX = patternGroup[item].scaleY = Math.max(scaleXFactor, scaleYFactor)
@@ -2285,7 +2605,7 @@ const DCanvas = React.forwardRef((props, ref) => {
           patternGroup[item].setCoords();
 
           const groupLength = patternGroup[item]._objects.length
-         
+
           patternGroup[item].clipPath = clipPath[item.replace(currentSize, finalSize)]
           patternGroup[item].clipPathName = item
           patternGroup[item].patternGroup = true
@@ -2375,10 +2695,12 @@ const DCanvas = React.forwardRef((props, ref) => {
       outLineSVGPath = outLineSVGPath.replace("fbx", "svg")
       fabric.loadSVGFromURL(designModel.baseURL + '/' + outLineSVGPath, (outlineSVG) => {
         const group = new fabric.util.groupSVGElements(outlineSVG)
-        group.scaleX = group.scaleX * scaleMultiplier
-        group.scaleY = group.scaleY * scaleMultiplier
-        group.left = group.left * scaleMultiplier
-        group.top = group.top * scaleMultiplier
+        //print file bug fix
+        group.scaleX = group.scaleX * canvas.initialloadCanvasOffset/512
+        group.scaleY = group.scaleY * canvas.initialloadCanvasOffset/512
+        group.left = group.left * canvas.initialloadCanvasOffset/512
+        group.top = group.top * canvas.initialloadCanvasOffset/512
+        //print file bug fix
         group.setCoords()
         canvas.add(group)
         canvas.renderAll()
@@ -2392,7 +2714,7 @@ const DCanvas = React.forwardRef((props, ref) => {
         const reader = new FileReader()
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
-          progress+=progressBarUnit
+          progress += progressBarUnit
           progressRef.current.setProgress(progress)
           progressRef.current.setMessage('Applying your custom design...')
           var base64data = reader.result;
@@ -2401,7 +2723,9 @@ const DCanvas = React.forwardRef((props, ref) => {
           productName = productList.splice(0, 1)
           let size = sizeList.splice(0, 1)
           selectedSVGGuid = sizesSelectedByUser.splice(0, 1)
-
+          // sizes -> s, m, L
+          // svg -> front, back
+// If each svg of the current size has been 
           if (productName.length > 0 && size.length > 0) {
 
             reAlignExistingTemplates(productName[0], size[0], canvasJSON, designTemplateSVGList, currentSize, false, productList, sizeList, resolve, selectedSVGGuid[0], sizesSelectedByUser, dpisOfSizesSelected, progress, progressBarUnit)
@@ -2425,7 +2749,14 @@ const DCanvas = React.forwardRef((props, ref) => {
     }
     if (design.saveProduct) {
       showProgressLoader(true)
-      const sizesSelectedByUser = design.selectedPrintSizes// Pdt variant ID
+      //Array to store the guids of all product sizes selected by user
+      let sizesSelectedByUser = []
+      if (mode !== 'create') {
+        sizesSelectedByUser = designModel?.productLibraryVariants?.map((item) => item.productVariantGuid)
+      }
+      else {
+        sizesSelectedByUser = design.selectedPrintSizes
+      }// Pdt variant ID
       let obj = {}
       let defaultDesignerJSON;
       const dpisOfSizesSelected = {}
@@ -2433,18 +2764,24 @@ const DCanvas = React.forwardRef((props, ref) => {
       * @description Step1: Generate canvas JSON (along with design details)
       */
       //  Note when saving , can't combine edit and duplicate. becuase, duplicate and create use the same save api.
+      const canvas = canvasRef.current
+      const topBottomIndicators = canvas._objects.filter(item => {
+        return item.indicator
+      })
+      topBottomIndicators.forEach(child => {
+        canvas.remove(child)
+      })
       callGenerateJSON(design, designModel)
-        .then((res) => {
-// Step 1 : Creating basic skeleton of payload (Variable name is obj)
+        .then((res) => { 
+          // Step 1 : Creating basic skeleton of payload (Variable name is obj)
           if (mode === 'create') {
             obj = {
               customerGuid: userDetails.customerGuid,
               title: designModel.title,
               description: designModel.description,
               designDetails: JSON.stringify(res),
+              designType: designerJSON ? designerJSON.designType : 1,
               productLibraryVariants: [],
-              imagePlacement: designerJSON?.imagePlacement,
-              backImagePlacement: designerJSON?.backImagePlacement,
               images: []
             }
           }
@@ -2453,10 +2790,9 @@ const DCanvas = React.forwardRef((props, ref) => {
               customerGuid: userDetails.customerGuid,
               title: designModel.title,
               description: designModel.description,
+              designType: designerJSON ? designerJSON.designType : 1,
               designDetails: JSON.stringify(res),
               productLibraryVariants: [],
-              imagePlacement: designerJSON?.imagePlacement,
-              backImagePlacement: designerJSON?.backImagePlacement,
               images: []
             }
 
@@ -2471,7 +2807,7 @@ const DCanvas = React.forwardRef((props, ref) => {
               images: []
             }
           }
-// Step 2: Populating the productLibraryVarinats in payload + preparing designerJSOnArray
+          // Step 2: Populating the productLibraryVarinats in payload + preparing designerJSOnArray
           if (mode === 'create') {
             sizesSelectedByUser.forEach((item) => {
               const productToAdd = designModel.productVariants.find((ele) => {
@@ -2482,7 +2818,9 @@ const DCanvas = React.forwardRef((props, ref) => {
                 productVarientId: productToAdd.productVariantId,
                 price: 2 * productToAdd.price,
                 imageGuids: [],
-                designDetails: JSON.stringify(res)
+                designDetails: JSON.stringify(res),
+                imagePlacement: designerJSON?.imagePlacement,
+                backImagePlacement: designerJSON?.backImagePlacement,
               })
 
             })
@@ -2510,7 +2848,9 @@ const DCanvas = React.forwardRef((props, ref) => {
                 productVarientId: productToAdd.productVariantId,
                 price: productToAdd.price,
                 imageGuids: [],
-                designDetails: JSON.stringify(res)
+                designDetails: JSON.stringify(res),
+                imagePlacement: designerJSON?.imagePlacement,
+                backImagePlacement: designerJSON?.backImagePlacement,
               })
 
             })
@@ -2551,10 +2891,10 @@ const DCanvas = React.forwardRef((props, ref) => {
             })
 
           }
-// Step 3: Based on type of mockup needed we have two flows (With models or without models) 
-  /**
-                 * @description Function used to add printfile image data for both DTG and normal ones
-                 */
+          // Step 3: Based on type of mockup needed we have two flows (With models or without models) 
+          /**
+         * @description Function used to add printfile image data for both DTG and normal ones
+                         */
           const addPrintImageDataToAPIPayload = (finalImagesToPrint, finalPrintFileDimensions, imageType = 3) => {
             Object.keys(finalImagesToPrint).forEach((item, index) => {
               let printImageGuid = uuidv4()
@@ -2569,7 +2909,7 @@ const DCanvas = React.forwardRef((props, ref) => {
               })
 
               const itemProductVariant = product.productVarients.find((ele) => (ele.guid === item))
-              
+
               let itemToAddImageGuidIndex;
               if (mode === 'create' || mode === 'duplicate') {
                 itemToAddImageGuidIndex = obj.productLibraryVariants.findIndex((ele) => {
@@ -2587,481 +2927,476 @@ const DCanvas = React.forwardRef((props, ref) => {
               obj.productLibraryVariants[itemToAddImageGuidIndex].imageGuids.push(printImageGuid)
               obj.productLibraryVariants[itemToAddImageGuidIndex].printFileWidth = finalPrintFileDimensions[item].width
               obj.productLibraryVariants[itemToAddImageGuidIndex].printFileHeight = finalPrintFileDimensions[item].height
-
-
-
             })
-          } 
-          if (defaultDesignerJSON.mockupModel && defaultDesignerJSON.cameraViewPositions && defaultDesignerJSON.cameraTargetViewPositions) {
-            sceneRef?.current?.generateMockup(canvasRef.current, defaultDesignerJSON, () => {
-
-              Promise.all(sceneRef?.current?.switchViewsAndTakeSnapShots(canvasRef.current, 'front')).then(async (res) => {
-                let uuid;
-                for (let value of res) {
-                  if (mode === 'create') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVarientId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                  else if (mode === 'duplicate') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productLibraryVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVarientId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                  else if (mode === 'edit') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productLibraryVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVariantId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                }
-                /**
-                 * @description Step 3: If there are addon images, push them to request payload
-                 */
-                const variantListToBeUsed = mode === 'create' ? designModel.productVariants : designModel.productLibraryVariants
-                if (design.addons.image.length > 0) {
-                  for (let i = 0; i < design.addons.image.length; i++) {
-
-                    obj.images.push({
-                      imageType: 1,
-                      guid: design.addons.image[i].uuid,
-                      displayOrder: i,
-                      libraryImageId: design.addons.image[i].libraryImageId
-                    })
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = variantListToBeUsed.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-                        if (mode === 'create' || mode === 'duplicate') {
-                          if (item.productVarientId === productToAdd.productVariantId)
-                            item.imageGuids.push(design.addons.image[i].uuid)
-                        }
-                        else if (mode === 'edit') {
-                          if (item.productVariantId === productToAdd.productVariantId)
-                            item.imageGuids.push(design.addons.image[i].uuid)
-                        }
-
-
-                      })
-
-                    })
-
-
-                  }
-
-
-
-
-                }
-
-              
-                /**
-                 * @description Step 4: Generating print svgs for each selected size of product
-                 */
-                let finalImagesToPrint, finalPrintFileDimensions, frontImage, backImage
-                if(designerJSONArray[0]?.designType === 2){
-                  const { frontImage: frontImageTemp, backImage: backImageTemp, imageType } = await generatePrintFilesForDTGApparel(designerJSONArray[0], undefined, canvasRef.current, sizesSelectedByUser, dpisOfSizesSelected)
-                  frontImage = frontImageTemp;
-                  backImage = backImageTemp;
-                 [frontImage, backImage].forEach((item) => {
-                  const {imageType,finalPrintableImageList, finalPrintFileDimensions  } = item
-                  if(finalPrintFileDimensions 
-                  && Object.keys(finalPrintFileDimensions).length !== 0){
-                    
-                  addPrintImageDataToAPIPayload(finalPrintableImageList, finalPrintFileDimensions, imageType)}
-                 })
-                }
-                else{
-                const  { finalPrintableImageList: finalImagesToPrintTemp, finalPrintFileDimensions: finalPrintFileDimensionsTemp } = await createFinalPrintImages(designerJSONArray, [...sizesSelectedByUser], dpisOfSizesSelected)
-                finalImagesToPrint = finalImagesToPrintTemp
-                finalPrintFileDimensions= finalPrintFileDimensionsTemp
-                addPrintImageDataToAPIPayload(finalImagesToPrint, finalPrintFileDimensions)
-                }
-               
-
-                // Adding removed image guid to removeImageGuids key of obj
-                if (mode === 'edit' || mode === 'duplicate') {
-                  const savedDesign = designModel.savedDesign
-                  for (let j = 0; j < obj.productLibraryVariants.length; j++) {
-                    let ele = obj.productLibraryVariants[j]
-                    for (let i = 0; i < savedDesign.addons.image.length; i++) {
-                      if (!ele.imageGuids.includes(savedDesign.addons.image[i].uuid)) {
-
-                        if (ele.removedImageIds)
-                          ele.removedImageIds.push(savedDesign.addons.image[i].libraryImageId)
-                      }
-                    }
-                  }
-                  for (let j = 0; j < obj.productLibraryVariants.length; j++) {
-                    let ele = obj.productLibraryVariants[j]
-
-                    for (let i = 0; i < designModel.productLibraryVariants.length; i++) {
-                      if (ele.productVariantId === designModel.productLibraryVariants[i].productVariantId) {
-                        designModel.productLibraryVariants[i].libraryVariantImages.forEach((item) => {
-                          if (item.imageType === 2 || item.imageType === 3) {
-                            ele.removedImageIds.push(item.libraryImageId)
-                          }
-                        })
-                      }
-                    }
-                  }
-
-                }
-
-                /**
-                * @description Step 5: Saving everything
-                */
-                 progressRef.current.setMessage('Almost there...saving your item to product library...')
-                
-                if (mode === 'create') {
-                  dispatch(saveSelectedProductSizes(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Product saved to product library', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-                else if (mode === 'edit') {
-
-                  dispatch(updateProduct(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Changes saved successfully', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-                else if (mode === 'duplicate') {
-
-                  dispatch(saveSelectedProductSizes(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Product duplicated and saved to product library', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-
-              })
-            })
-
-          } else {
-            Promise.all(generateMockupImages(canvasRef, sceneRef, defaultDesignerJSON))
-              .then(async (res) => {
-                let uuid;
-                for (let value of res) {
-                  if (mode === 'create') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVarientId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                  else if (mode === 'duplicate') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productLibraryVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVarientId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                  else if (mode === 'edit') {
-                    uuid = uuidv4()
-
-                    obj.images.push({
-                      imageType: 2,
-                      guid: uuid,
-                      image: {
-                        fileName: `${value.key}.png`,
-                        fileData: value.file
-                      },
-                      displayOrder: res.indexOf(value),
-                    })
-
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = designModel.productLibraryVariants.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-
-                        if (!item.imageGuids)
-                          item.imageGuids = []
-                        if (item.productVariantId === productToAdd.productVariantId)
-                          item.imageGuids.push(uuid)
-                      })
-                    })
-                  }
-                }
-                /**
-                 * @description Step 3: If there are addon images, push them to request payload
-                 */
-                const variantListToBeUsed = mode === 'create' ? designModel.productVariants : designModel.productLibraryVariants
-                if (design.addons.image.length > 0) {
-                  for (let i = 0; i < design.addons.image.length; i++) {
-
-                    obj.images.push({
-                      imageType: 1,
-                      guid: design.addons.image[i].uuid,
-                      displayOrder: i,
-                      libraryImageId: design.addons.image[i].libraryImageId
-                    })
-                    sizesSelectedByUser.forEach((ele) => {
-                      const productToAdd = variantListToBeUsed.find((child) => {
-                        return child.productVariantGuid === ele
-                      })
-                      obj.productLibraryVariants.forEach((item) => {
-                        if (mode === 'create' || mode === 'duplicate') {
-                          if (item.productVarientId === productToAdd.productVariantId)
-                            item.imageGuids.push(design.addons.image[i].uuid)
-                        }
-                        else if (mode === 'edit') {
-                          if (item.productVariantId === productToAdd.productVariantId)
-                            item.imageGuids.push(design.addons.image[i].uuid)
-                        }
-
-
-                      })
-
-                    })
-
-
-                  }
-
-
-
-
-                }
-
-                /**
-                 * @description Step 4: Generating print svgs for each selected size of product
-                 */
-
-                 let finalImagesToPrint, finalPrintFileDimensions, frontImage, backImage
-                if(designerJSONArray[0]?.designType === 2){
-                  const { frontImage: frontImageTemp, backImage: backImageTemp, imageType } = await generatePrintFilesForDTGApparel(designerJSONArray[0], undefined, canvasRef.current, sizesSelectedByUser, dpisOfSizesSelected)
-                  frontImage = frontImageTemp;
-                  backImage = backImageTemp;
-                 [frontImage, backImage].forEach((item) => {
-                  const {imageType, finalPrintableImageList, finalPrintFileDimensions  } = item
-                  if(finalPrintFileDimensions 
-                    && Object.keys(finalPrintFileDimensions).length !== 0){
-                  addPrintImageDataToAPIPayload(finalPrintableImageList, finalPrintFileDimensions, imageType)}
-                 })
-                }
-                else{
-                const  { finalPrintableImageList: finalImagesToPrintTemp, finalPrintFileDimensions: finalPrintFileDimensionsTemp } = await createFinalPrintImages(designerJSONArray, [...sizesSelectedByUser], dpisOfSizesSelected)
-                finalImagesToPrint = finalImagesToPrintTemp
-                finalPrintFileDimensions= finalPrintFileDimensionsTemp
-                addPrintImageDataToAPIPayload(finalImagesToPrint, finalPrintFileDimensions)
-                }
-
-                // Adding removed image guid to removeImageGuids key of obj
-                if (mode === 'edit' || mode === 'duplicate') {
-                  const savedDesign = designModel.savedDesign
-                  for (let j = 0; j < obj.productLibraryVariants.length; j++) {
-                    let ele = obj.productLibraryVariants[j]
-                    for (let i = 0; i < savedDesign.addons.image.length; i++) {
-                      if (!ele.imageGuids.includes(savedDesign.addons.image[i].uuid)) {
-                        if (ele.removedImageIds)
-                          ele.removedImageIds.push(savedDesign.addons.image[i].libraryImageId)
-                      }
-                    }
-                  }
-                  for (let j = 0; j < obj.productLibraryVariants.length; j++) {
-                    let ele = obj.productLibraryVariants[j]
-
-                    for (let i = 0; i < designModel.productLibraryVariants.length; i++) {
-                      if (ele.productVariantId === designModel.productLibraryVariants[i].productVariantId) {
-                        designModel.productLibraryVariants[i].libraryVariantImages.forEach((item) => {
-                          if (item.imageType === 2 || item.imageType === 3) {
-                            ele.removedImageIds.push(item.libraryImageId)
-                          }
-                        })
-                      }
-                    }
-                  }
-
-                }
-
-                /**
-                * @description Step 5: Saving everything
-                */
-                 progressRef.current.setMessage('Almost there...saving your item to product library...')
-                if (mode === 'create') {
-                  dispatch(saveSelectedProductSizes(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Product saved to product library', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-                else if (mode === 'edit') {
-
-                  dispatch(updateProduct(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Changes saved successfully', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-                else if (mode === 'duplicate') {
-
-                  dispatch(saveSelectedProductSizes(obj))
-                    .then((res) => {
-                      if (200 <= res.statusCode && res.statusCode < 300) {
-
-                        NotificationManager.success('Product duplicated and saved to product library', '', 5000)
-                        dispatch(clearEntireState())
-                        router.push('/productlibrary')
-
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err)
-                      NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
-                    })
-                }
-
-              })
           }
+          // TODO: THis is for generating mockups with human models in them for apparels
+          // if (defaultDesignerJSON.mockupModel && defaultDesignerJSON.cameraViewPositions && defaultDesignerJSON.cameraTargetViewPositions) {
+          //   sceneRef?.current?.generateMockup(canvasRef.current, defaultDesignerJSON, () => {
+
+          //     Promise.all(sceneRef?.current?.switchViewsAndTakeSnapShots(canvasRef.current, 'front')).then(async (res) => {
+          //       let uuid;
+          //       for (let value of res) {
+          //         if (mode === 'create') {
+          //           uuid = uuidv4()
+
+          //           obj.images.push({
+          //             imageType: 2,
+          //             guid: uuid,
+          //             image: {
+          //               fileName: `${value.key}.png`,
+          //               fileData: value.file
+          //             },
+          //             displayOrder: res.indexOf(value),
+          //           })
+
+          //           sizesSelectedByUser.forEach((ele) => {
+          //             const productToAdd = designModel.productVariants.find((child) => {
+          //               return child.productVariantGuid === ele
+          //             })
+          //             obj.productLibraryVariants.forEach((item) => {
+
+          //               if (!item.imageGuids)
+          //                 item.imageGuids = []
+          //               if (item.productVarientId === productToAdd.productVariantId)
+          //                 item.imageGuids.push(uuid)
+          //             })
+          //           })
+          //         }
+          //         else if (mode === 'duplicate') {
+          //           uuid = uuidv4()
+
+          //           obj.images.push({
+          //             imageType: 2,
+          //             guid: uuid,
+          //             image: {
+          //               fileName: `${value.key}.png`,
+          //               fileData: value.file
+          //             },
+          //             displayOrder: res.indexOf(value),
+          //           })
+
+          //           sizesSelectedByUser.forEach((ele) => {
+          //             const productToAdd = designModel.productLibraryVariants.find((child) => {
+          //               return child.productVariantGuid === ele
+          //             })
+          //             obj.productLibraryVariants.forEach((item) => {
+
+          //               if (!item.imageGuids)
+          //                 item.imageGuids = []
+          //               if (item.productVarientId === productToAdd.productVariantId)
+          //                 item.imageGuids.push(uuid)
+          //             })
+          //           })
+          //         }
+          //         else if (mode === 'edit') {
+          //           uuid = uuidv4()
+
+          //           obj.images.push({
+          //             imageType: 2,
+          //             guid: uuid,
+          //             image: {
+          //               fileName: `${value.key}.png`,
+          //               fileData: value.file
+          //             },
+          //             displayOrder: res.indexOf(value),
+          //           })
+
+          //           sizesSelectedByUser.forEach((ele) => {
+          //             const productToAdd = designModel.productLibraryVariants.find((child) => {
+          //               return child.productVariantGuid === ele
+          //             })
+          //             obj.productLibraryVariants.forEach((item) => {
+
+          //               if (!item.imageGuids)
+          //                 item.imageGuids = []
+          //               if (item.productVariantId === productToAdd.productVariantId)
+          //                 item.imageGuids.push(uuid)
+          //             })
+          //           })
+          //         }
+          //       }
+          //       /**
+          //        * @description Step 3: If there are addon images, push them to request payload
+          //        */
+          //       const variantListToBeUsed = mode === 'create' ? designModel.productVariants : designModel.productLibraryVariants
+          //       if (design.addons.image.length > 0) {
+          //         for (let i = 0; i < design.addons.image.length; i++) {
+
+          //           obj.images.push({
+          //             imageType: 1,
+          //             guid: design.addons.image[i].uuid,
+          //             displayOrder: i,
+          //             libraryImageId: design.addons.image[i].libraryImageId
+          //           })
+          //           sizesSelectedByUser.forEach((ele) => {
+          //             const productToAdd = variantListToBeUsed.find((child) => {
+          //               return child.productVariantGuid === ele
+          //             })
+          //             obj.productLibraryVariants.forEach((item) => {
+          //               if (mode === 'create' || mode === 'duplicate') {
+          //                 if (item.productVarientId === productToAdd.productVariantId)
+          //                   item.imageGuids.push(design.addons.image[i].uuid)
+          //               }
+          //               else if (mode === 'edit') {
+          //                 if (item.productVariantId === productToAdd.productVariantId)
+          //                   item.imageGuids.push(design.addons.image[i].uuid)
+          //               }
 
 
+          //             })
+
+          //           })
+
+
+          //         }
+          //     }
+
+
+          //       /**
+          //        * @description Step 4: Generating print svgs for each selected size of product
+          //        */
+          //       let finalImagesToPrint, finalPrintFileDimensions, frontImage, backImage
+          //       if(designerJSONArray[0]?.designType === 2){
+          //         const { frontImage: frontImageTemp, backImage: backImageTemp, imageType } = await generatePrintFilesForDTGApparel(designerJSONArray[0], undefined, canvasRef.current, sizesSelectedByUser, dpisOfSizesSelected)
+          //         frontImage = frontImageTemp;
+          //         backImage = backImageTemp;
+          //        [frontImage, backImage].forEach((item) => {
+          //         const {imageType,finalPrintableImageList, finalPrintFileDimensions  } = item
+          //         if(finalPrintFileDimensions 
+          //         && Object.keys(finalPrintFileDimensions).length !== 0){
+
+          //         addPrintImageDataToAPIPayload(finalPrintableImageList, finalPrintFileDimensions, imageType)}
+          //        })
+          //       }
+          //       else{
+          //       const  { finalPrintableImageList: finalImagesToPrintTemp, finalPrintFileDimensions: finalPrintFileDimensionsTemp } = await createFinalPrintImages(designerJSONArray, [...sizesSelectedByUser], dpisOfSizesSelected)
+          //       finalImagesToPrint = finalImagesToPrintTemp
+          //       finalPrintFileDimensions= finalPrintFileDimensionsTemp
+          //       addPrintImageDataToAPIPayload(finalImagesToPrint, finalPrintFileDimensions)
+          //       }
+
+
+          //       // Adding removed image guid to removeImageGuids key of obj
+          //       if (mode === 'edit' || mode === 'duplicate') {
+          //         const savedDesign = designModel.savedDesign
+          //         for (let j = 0; j < obj.productLibraryVariants.length; j++) {
+          //           let ele = obj.productLibraryVariants[j]
+          //           for (let i = 0; i < savedDesign.addons.image.length; i++) {
+          //             if (!ele.imageGuids.includes(savedDesign.addons.image[i].uuid)) {
+
+          //               if (ele.removedImageIds)
+          //                 ele.removedImageIds.push(savedDesign.addons.image[i].libraryImageId)
+          //             }
+          //           }
+          //         }
+          //         for (let j = 0; j < obj.productLibraryVariants.length; j++) {
+          //           let ele = obj.productLibraryVariants[j]
+
+          //           for (let i = 0; i < designModel.productLibraryVariants.length; i++) {
+          //             if (ele.productVariantId === designModel.productLibraryVariants[i].productVariantId) {
+          //               designModel.productLibraryVariants[i].libraryVariantImages.forEach((item) => {
+          //                 if (item.imageType === 2 || item.imageType === 3) {
+          //                   ele.removedImageIds.push(item.libraryImageId)
+          //                 }
+          //               })
+          //             }
+          //           }
+          //         }
+
+          //       }
+
+          //       /**
+          //       * @description Step 5: Saving everything
+          //       */
+          //        progressRef.current.setMessage('Almost there...saving your item to product library...')
+
+          //       if (mode === 'create') {
+          //         dispatch(saveSelectedProductSizes(obj))
+          //           .then((res) => {
+          //             if (200 <= res.statusCode && res.statusCode < 300) {
+
+          //               NotificationManager.success('Product saved to product library', '', 5000)
+          //               dispatch(clearEntireState())
+          //               router.push('/productlibrary')
+
+          //             }
+          //           })
+          //           .catch((err) => {
+          //             console.log(err)
+          //             NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+          //           })
+          //       }
+          //       else if (mode === 'edit') {
+
+          //         dispatch(updateProduct(obj))
+          //           .then((res) => {
+          //             if (200 <= res.statusCode && res.statusCode < 300) {
+
+          //               NotificationManager.success('Changes saved successfully', '', 5000)
+          //               dispatch(clearEntireState())
+          //               router.push('/productlibrary')
+          //             }
+          //           })
+          //           .catch((err) => {
+          //             console.log(err)
+          //             NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+          //           })
+          //       }
+          //       else if (mode === 'duplicate') {
+
+          //         dispatch(saveSelectedProductSizes(obj))
+          //           .then((res) => {
+          //             if (200 <= res.statusCode && res.statusCode < 300) {
+
+          //               NotificationManager.success('Product duplicated and saved to product library', '', 5000)
+          //               dispatch(clearEntireState())
+          //               router.push('/productlibrary')
+
+          //             }
+          //           })
+          //           .catch((err) => {
+          //             console.log(err)
+          //             NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+          //           })
+          //       }
+
+          //     })
+          //   })
+
+          // } else {
+
+          // }
+
+          Promise.all(generateMockupImages(canvasRef, sceneRef, defaultDesignerJSON))
+            .then(async (res) => {
+              let uuid;
+              for (let value of res) {
+                if (mode === 'create') {
+                  uuid = uuidv4()
+
+                  obj.images.push({
+                    imageType: 2,
+                    guid: uuid,
+                    image: {
+                      fileName: `${value.key}.png`,
+                      fileData: value.file
+                    },
+                    displayOrder: res.indexOf(value),
+                  })
+
+                  sizesSelectedByUser.forEach((ele) => {
+                    const productToAdd = designModel.productVariants.find((child) => {
+                      return child.productVariantGuid === ele
+                    })
+                    obj.productLibraryVariants.forEach((item) => {
+
+                      if (!item.imageGuids)
+                        item.imageGuids = []
+                      if (item.productVarientId === productToAdd.productVariantId)
+                        item.imageGuids.push(uuid)
+                    })
+                  })
+                }
+                else if (mode === 'duplicate') {
+                  uuid = uuidv4()
+
+                  obj.images.push({
+                    imageType: 2,
+                    guid: uuid,
+                    image: {
+                      fileName: `${value.key}.png`,
+                      fileData: value.file
+                    },
+                    displayOrder: res.indexOf(value),
+                  })
+
+                  sizesSelectedByUser.forEach((ele) => {
+                    const productToAdd = designModel.productLibraryVariants.find((child) => {
+                      return child.productVariantGuid === ele
+                    })
+                    obj.productLibraryVariants.forEach((item) => {
+
+                      if (!item.imageGuids)
+                        item.imageGuids = []
+                      if (item.productVarientId === productToAdd.productVariantId)
+                        item.imageGuids.push(uuid)
+                    })
+                  })
+                }
+                else if (mode === 'edit') {
+                  uuid = uuidv4()
+
+                  obj.images.push({
+                    imageType: 2,
+                    guid: uuid,
+                    image: {
+                      fileName: `${value.key}.png`,
+                      fileData: value.file
+                    },
+                    displayOrder: res.indexOf(value),
+                  })
+
+                  sizesSelectedByUser.forEach((ele) => {
+                    const productToAdd = designModel.productLibraryVariants.find((child) => {
+                      return child.productVariantGuid === ele
+                    })
+                    obj.productLibraryVariants.forEach((item) => {
+
+                      if (!item.imageGuids)
+                        item.imageGuids = []
+                      if (item.productVariantId === productToAdd.productVariantId)
+                        item.imageGuids.push(uuid)
+                    })
+                  })
+                }
+              }
+              /**
+               * @description Step 3: If there are addon images, push them to request payload
+               */
+              const variantListToBeUsed = mode === 'create' ? designModel.productVariants : designModel.productLibraryVariants
+              if (design.addons.image.length > 0) {
+                for (let i = 0; i < design.addons.image.length; i++) {
+
+                  obj.images.push({
+                    imageType: 1,
+                    guid: design.addons.image[i].uuid,
+                    displayOrder: i,
+                    libraryImageId: design.addons.image[i].libraryImageId
+                  })
+                  sizesSelectedByUser.forEach((ele) => {
+                    const productToAdd = variantListToBeUsed.find((child) => {
+                      return child.productVariantGuid === ele
+                    })
+                    obj.productLibraryVariants.forEach((item) => {
+                      if (mode === 'create' || mode === 'duplicate') {
+                        if (item.productVarientId === productToAdd.productVariantId)
+                          item.imageGuids.push(design.addons.image[i].uuid)
+                      }
+                      else if (mode === 'edit') {
+                        if (item.productVariantId === productToAdd.productVariantId)
+                          item.imageGuids.push(design.addons.image[i].uuid)
+                      }
+
+
+                    })
+
+                  })
+
+
+                }
+
+
+
+
+              }
+
+              /**
+               * @description Step 4: Generating print svgs for each selected size of product
+               */
+
+              let finalImagesToPrint, finalPrintFileDimensions, frontImage, backImage
+              if (designerJSONArray[0]?.designType === 2) {
+                const { frontImage: frontImageTemp, backImage: backImageTemp, imageType } = await generatePrintFilesForDTGApparel(designerJSONArray[0], undefined, canvasRef.current, sizesSelectedByUser, dpisOfSizesSelected)
+                frontImage = frontImageTemp;
+                backImage = backImageTemp;
+                [frontImage, backImage].forEach((item) => {
+                  const { imageType, finalPrintableImageList, finalPrintFileDimensions } = item
+                  if (finalPrintFileDimensions
+                    && Object.keys(finalPrintFileDimensions).length !== 0) {
+                    addPrintImageDataToAPIPayload(finalPrintableImageList, finalPrintFileDimensions, imageType)
+                  }
+                })
+              }
+              else {
+                const { finalPrintableImageList: finalImagesToPrintTemp, finalPrintFileDimensions: finalPrintFileDimensionsTemp } = await createFinalPrintImages(designerJSONArray, [...sizesSelectedByUser], dpisOfSizesSelected)
+                finalImagesToPrint = finalImagesToPrintTemp
+                finalPrintFileDimensions = finalPrintFileDimensionsTemp
+                addPrintImageDataToAPIPayload(finalImagesToPrint, finalPrintFileDimensions)
+              }
+
+              // Adding removed image guid to removeImageGuids key of obj
+              if (mode === 'edit' || mode === 'duplicate') {
+                const savedDesign = designModel.savedDesign
+                for (let j = 0; j < obj.productLibraryVariants.length; j++) {
+                  let ele = obj.productLibraryVariants[j]
+                  for (let i = 0; i < savedDesign.addons.image.length; i++) {
+                    if (!ele.imageGuids.includes(savedDesign.addons.image[i].uuid)) {
+                      if (ele.removedImageIds)
+                        ele.removedImageIds.push(savedDesign.addons.image[i].libraryImageId)
+                    }
+                  }
+                }
+                for (let j = 0; j < obj.productLibraryVariants.length; j++) {
+                  let ele = obj.productLibraryVariants[j]
+
+                  for (let i = 0; i < designModel.productLibraryVariants.length; i++) {
+                    if (ele.productVariantId === designModel.productLibraryVariants[i].productVariantId) {
+                      designModel.productLibraryVariants[i].libraryVariantImages.forEach((item) => {
+                        if (item.imageType === 2 || item.imageType === 3) {
+                          ele.removedImageIds.push(item.libraryImageId)
+                        }
+                      })
+                    }
+                  }
+                }
+
+              }
+
+              /**
+              * @description Step 5: Saving everything
+              */
+              progressRef.current.setMessage('Almost there...saving your item to product library...')
+              if (mode === 'create') {
+                dispatch(saveSelectedProductSizes(obj))
+                  .then((res) => {
+                    if (200 <= res.statusCode && res.statusCode < 300) {
+
+                      NotificationManager.success('Product saved to product library', '', 5000)
+                      dispatch(clearEntireState())
+                      router.push('/productlibrary')
+
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err)
+                    NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+                  })
+              }
+              else if (mode === 'edit') {
+
+                dispatch(updateProduct(obj))
+                  .then((res) => {
+                    if (200 <= res.statusCode && res.statusCode < 300) {
+
+                      NotificationManager.success('Changes saved successfully', '', 5000)
+                      dispatch(clearEntireState())
+                      router.push('/productlibrary')
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err)
+                    NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+                  })
+              }
+              else if (mode === 'duplicate') {
+
+                dispatch(saveSelectedProductSizes(obj))
+                  .then((res) => {
+                    if (200 <= res.statusCode && res.statusCode < 300) {
+
+                      NotificationManager.success('Product duplicated and saved to product library', '', 5000)
+                      dispatch(clearEntireState())
+                      router.push('/productlibrary')
+
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err)
+                    NotificationManager.error('Unexpected error occured. Failed to save product.', '', 10000)
+                  })
+              }
+
+            })
 
         });
 
@@ -3092,6 +3427,7 @@ const DCanvas = React.forwardRef((props, ref) => {
       initCanvas(baseURL, designerJSON, designModel)
       dispatch(addModelConfig(res.response))
     }
+
     const getProductLibraryDetails = async () => {
       const res = await dispatch(getProductLibraryDesignDetails({ productLibraryId, productLibraryVariantId }))
       baseURL = res.response.baseURL

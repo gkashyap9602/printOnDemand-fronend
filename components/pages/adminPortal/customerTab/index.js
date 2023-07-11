@@ -8,7 +8,7 @@ import { statusTabList } from 'constants/fields'
 
 const useStyles = style
 
-const CustomerTab = ({ updateQuery, customerList, adminParam }) => {
+const CustomerTab = ({ updateQuery, customerList, adminParam, handleAllFilterChange }) => {
   const classes = useStyles()
   const [active, setActive] = useState(4)
   const [activeTabDetails, setActiveTabDetails] = useState(statusTabList[4])
@@ -36,10 +36,12 @@ const CustomerTab = ({ updateQuery, customerList, adminParam }) => {
     if (adminParam?.status !== activeTabDetails?.statusId) {
       if (activeTabDetails?.statusId) {
         updateQuery({ ...adminParam, pageIndex: 0, status: activeTabDetails?.statusId })
+        handleAllFilterChange({ ...adminParam, pageIndex: 0, status: activeTabDetails?.statusId })
       } else {
         const keyRemovedParam = { ...adminParam }
         delete keyRemovedParam.status
         updateQuery({ ...keyRemovedParam, pageIndex: 0 })
+        handleAllFilterChange({ ...keyRemovedParam, pageIndex: 0 })
       }
     }
   }, [active])

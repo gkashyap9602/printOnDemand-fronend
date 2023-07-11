@@ -133,15 +133,17 @@ let Login = ({
         })
       } else if (response?.userType === 1) {
         setLoaderBtn(false)
+        setLoader(false)
         NotificationManager.error('SuperAdmin role is not yet ready', '', 10000)
       }
     } else if (res.StatusCode >= 400 || res.StatusCode === 12002) {
       setLoaderBtn(false)
+      setLoader(false)
       NotificationManager.error(res?.Response?.Message, '', 10000)
     } else {
       setLoaderBtn(false)
+      setLoader(false)
     }
-    setLoader(false)
   }
 
   /**

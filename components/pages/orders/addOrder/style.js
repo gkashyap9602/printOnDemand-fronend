@@ -9,6 +9,48 @@ const style = makeStyles((theme) => ({
       fontFamily: 'Inter SemiBold'
     }
   },
+
+  rowWidth: {
+    width: '60%  !important '
+  },
+  flexClass: {
+    display: 'flex',
+    marginTop: 20,
+    '& .MuiOutlinedInput-root.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#d4d4d4'
+    },
+    '@media screen and (max-width:599px)': {
+      flexWrap: 'wrap',
+      justifyContent: 'center'
+    }
+  },
+  mbBottom: {
+    '@media screen and (max-width:599px)': {
+      marginBottom: 16
+    }
+  },
+  labelForm: {
+    color: '#6c7985'
+  },
+  error: {
+    backgroundColor: '#fbe0e6',
+    color: '#ff00006b',
+    padding: theme.spacing(2),
+    borderRadius: 6,
+    border: '1px solid #ededed',
+    display: 'flex',
+    alignItems: 'center',
+    '& .MuiTypography-body1': {
+      fontWeight: 500,
+      fontFamily: 'Inter Medium'
+    },
+    '& .MuiTypography-h3': {
+      fontSize: 18,
+      fontFamily: 'Inter Bold',
+      fontWeight: 400
+    }
+  },
+
   pointerEvent: {
     pointerEvents: 'none'
   },
@@ -231,7 +273,34 @@ const style = makeStyles((theme) => ({
     }
   },
   billingRow: {
-    marginBottom: 20
+    marginBottom: 20,
+    '& .MuiFormControl-root': {
+      '& .MuiButtonBase-root:hover ': {
+        backgroundColor: 'unset',
+        cursor: 'auto'
+      },
+      '& .MuiTouchRipple-root': {
+        color: '#fff'
+      },
+
+      '& .MuiInputLabel-root': {
+        color: '#17243e',
+        fontSize: 14
+      },
+
+      '&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#d4d4d4'
+      },
+      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        border: '1px solid #d4d4d4'
+      },
+      '& .MuiInputLabel-outlined.Mui-focused': {
+        color: '#0B2343'
+      },
+      '& .MuiInputAdornment-positionEnd': {
+        cursor: 'pointer'
+      }
+    }
   },
   row_BtmHead: {
     marginBottom: theme.spacing(5)
@@ -385,7 +454,8 @@ const style = makeStyles((theme) => ({
         fontSize: 14,
         fontWeight: '300'
       }
-    }
+    },
+    marginBottom: 10
   }
 }))
 export default style

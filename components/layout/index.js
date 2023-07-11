@@ -31,11 +31,16 @@ import avatar from 'static/images/user-common.png'
 import MoreSettings from 'components/formElements'
 import { ISSERVER } from 'constants/routePaths'
 import { statusTabList } from 'constants/fields'
-import { getAccontDetails, updateField, getUserSessionShopify } from 'redux/actions/userActions'
+import {
+  getAccontDetails,
+  updateField,
+  getUserSessionShopify,
+  getStatusApi
+} from 'redux/actions/userActions'
 import { connect, useSelector } from 'react-redux'
 import Loader from 'components/loader'
 import { NotificationManager } from 'react-notifications'
-import { isActiveInternet, isShopifyApp } from '../../utils/helpers'
+import { checkIfEmpty, isActiveInternet, isShopifyApp } from '../../utils/helpers'
 import { getAllCategory } from 'redux/actions/categoryActions'
 import { useDispatch } from 'react-redux'
 import { getProductDetail, updateProductQuery } from 'redux/actions/productActions'
@@ -70,7 +75,8 @@ const Layout = ({
   getUserSessionShopify,
   userSessionShopify,
   shopifyAuth,
-  signoutHandler
+  signoutHandler,
+  getStatusApi
 }) => {
   const router = useRouter()
   const classes = useStyles()
@@ -95,12 +101,11 @@ const Layout = ({
           updateField('userDetails', JSON.parse(localStorage.getItem('userSession')))
         }
       }
-      getAllCategory()
     }
   }, [])
 
   useEffect(async () => {
-    if (userSession?.guid) {
+    if (userSession?.guid && checkIfEmpty(userAccountDetails?.response)) {
       const res = await getAccontDetails(userSession?.guid)
       if (res?.StatusCode === 12002 || res.hasError) {
         setLoader(false)
@@ -111,43 +116,69 @@ const Layout = ({
         NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
       }
     }
+    if (userSession?.guid) {
+      const resultData = await getStatusApi(userSession?.guid)
+      if (resultData?.response) {
+        setLoader(false)
+        statusTabList?.map((list) => {
+          if (list.statusId === resultData?.response?.status) {
+            setActiveStatus({ text: list.text, icon: list.icon, bg: list.userBG })
+          }
+        })
+      }
+    }
   }, [router?.pathname, userSession])
 
   useEffect(() => {
     if (userAccountDetails?.response?.status) {
       setLoader(false)
       if (userDetails?.status && userDetails?.status !== userAccountDetails?.response?.status) {
-        const newUserSession = {
+        if (!shopifyAuth && !isShopifyApp()) {
+          localStorage.setItem(
+            'userSession',
+            JSON.stringify({
+              ...userDetails,
+              activeStatusId: userAccountDetails?.response?.status
+            })
+          )
+        }
+        updateField('userDetails', {
           ...userDetails,
           activeStatusId: userAccountDetails?.response?.status
-        }
-        if (!shopifyAuth && !isShopifyApp()) {
-          localStorage.setItem('userSession', JSON.stringify(newUserSession))
-        }
-        updateField('userDetails', newUserSession)
+        })
       }
     }
-  }, [userAccountDetails, userDetails])
+  }, [userAccountDetails, !checkIfEmpty(userDetails)])
+  // useEffect(() => {
+  //   if (userDetails?.status) {
+  //     setLoader(false)
+  //     statusTabList?.map((list) => {
+  //       if (list.statusId === userDetails?.status) {
+  //         setActiveStatus({ text: list.text, icon: list.icon, bg: list.userBG })
+  //       }
+  //     })
+  //   }
+  // }, [userDetails])
   useEffect(() => {
-    if (userDetails?.status) {
+    if (userAccountDetails?.response?.status) {
       setLoader(false)
       statusTabList?.map((list) => {
-        if (list.statusId === userDetails?.status) {
+        if (list.statusId === userAccountDetails?.response?.status) {
           setActiveStatus({ text: list.text, icon: list.icon, bg: list.userBG })
         }
       })
     }
-  }, [userDetails])
+  }, [userAccountDetails])
 
   useEffect(() => {
     if (dtoolHeader) {
       dispatch(getProductDetail(router.query.productName))
     }
-    return () => {
-      if (!shopifyAuth) {
-        updateField('userAccountDetails', null)
-      }
-    }
+    // return () => {
+    //   if (!shopifyAuth) {
+    //     updateField('userAccountDetails', null)
+    //   }
+    // }
   }, [])
 
   const handleToggle = () => {
@@ -182,14 +213,15 @@ const Layout = ({
       setOpenOver(false)
       if (shopifyAuth) {
         updateField('userDetails', null)
+        updateField('userAccountDetails', null)
         updateField('userSessionShopify', null)
-
         // clearSessionShopify()
         // clearTokenShopify()
         // route.reload()
       } else {
         localStorage.removeItem('userSession')
         localStorage.removeItem('paytraceCustomerId')
+        updateField('userAccountDetails', null)
         localStorage.removeItem('orderSubmissionDelay')
       }
 
@@ -228,11 +260,15 @@ const Layout = ({
   const handleBackClick = () => {
     if (router.query.mode === 'create') {
       dispatch(clearEntireState())
-      router.push(
-        `/catalog/${
-          categories?.find((val) => val.guid === router.query.subcatalog)?.guid
-        }/product/${router?.query?.productName}?subcategory=${router.query.subcategory}`
-      )
+      router?.query?.isGlobalSearch
+        ? router.push(
+            `catalog/subcatalog/product/${router?.query?.productName}?isGlobalSearch=${router?.query?.isGlobalSearch}`
+          )
+        : router.push(
+            `/catalog/${
+              categories?.find((val) => val.guid === router.query.subcatalog)?.guid
+            }/product/${router?.query?.productName}?subcategory=${router.query.subcategory}`
+          )
     } else if (router.query.mode === 'edit' || router.query.mode === 'duplicate') {
       dispatch(clearEntireState())
       router.push('/productlibrary')
@@ -315,12 +351,15 @@ const Layout = ({
                               },
                               {
                                 name: router?.query?.title,
-                                link: `/catalog/${
-                                  categories?.find((val) => val.guid === router.query.subcatalog)
-                                    ?.guid
-                                }/product/${router?.query?.productName}?subcategory=${
-                                  router.query.subcategory
-                                }`
+                                link: router?.query?.isGlobalSearch
+                                  ? `catalog/subcatalog/product/${router?.query?.productName}?isGlobalSearch=${router?.query?.isGlobalSearch}`
+                                  : `/catalog/${
+                                      categories?.find(
+                                        (val) => val.guid === router.query.subcatalog
+                                      )?.guid
+                                    }/product/${router?.query?.productName}?subcategory=${
+                                      router.query.subcategory
+                                    }`
                               },
                               { name: 'Designer tool' }
                             ]}
@@ -533,7 +572,8 @@ const mapDispatchToProps = {
   updateProductQuery,
   updateProductLibraryQuery,
   getUserSessionShopify,
-  signoutHandler
+  signoutHandler,
+  getStatusApi
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Layout)
