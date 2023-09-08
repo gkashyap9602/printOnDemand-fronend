@@ -6,5 +6,5 @@
  * @param {*} res
  */
 export default function handler(req, res) {
-  res.status(200).json(process.env.PUBLIC_KEY)
+  res.status(200).json(process.env.PUBLIC_KEY) 
 }
