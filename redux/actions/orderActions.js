@@ -3,7 +3,7 @@ import fetchHandler from '../../utils/fetchResponseHandler'
 
 export const fetchAllOrders = (data) => {
   const fetchOptions = {
-    url: `api/Orders/All`,
+    url: `api/v1/users/getAllOrders`,
     method: 'POST',
     actionType: ORDERS.GET_ALL_ORDERS,
     body: JSON.stringify(data),
@@ -26,7 +26,7 @@ export const fetchOrderDetails = (id) => {
 
 export const fetchOrderTemplate = (id) => {
   const fetchOptions = {
-    url: `api/Orders/GetBulkImportTemplate`,
+    url: `api/v1/users/getBulkImport`,
     method: 'GET',
     actionType: ORDERS.ORDER_TEMPLATE,
     secure: true

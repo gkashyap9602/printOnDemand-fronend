@@ -47,9 +47,9 @@ const CreateOrder = ({
    * Initial fetch
    */
   useEffect(async () => {
-    if (userDetails?.guid) {
+    if (userDetails?._id) {
       setloader(true)
-      const res = await getAccontDetails(userDetails?.guid)
+      const res = await getAccontDetails(userDetails?._id)
       const data = await getProductLibraryDetail(route?.query?.productId)
       const result = await updateVariantsOfOrders({
         variants: data?.response?.productLibraryVariants.map((item) => item),

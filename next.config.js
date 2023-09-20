@@ -38,10 +38,11 @@ module.exports = {
     SITE_URL: process.env.SITE_URL,
     ZENDESK_URL: process.env.ZENDESK_URL,
     ZENDESK_EMAIL: process.env.ZENDESK_EMAIL,
-    ZENDESK_PASSWORD: process.env.ZENDESK_PASSWORD
+    ZENDESK_PASSWORD: process.env.ZENDESK_PASSWORD,
+    ENV_MODE: process.env.ENV_MODE,
   },
   images: {
-    domains: ['mwwdevapi.fingent.net', 'mwwportalstoragedev.blob.core.windows.net'],
+    domains: ['mwwdevapi.fingent.net', 'mwwportalstoragedev.blob.core.windows.net','mww.solidappmaker.ml'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
   },

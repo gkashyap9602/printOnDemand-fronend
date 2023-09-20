@@ -39,7 +39,7 @@ const Profile = ({
   const [paymentInfo, setpaymentInfo] = useState({})
   const route = useRouter()
   const [complitionStatus, setComplitionStatus] = useState({})
-
+console.log("wizardIndex",wizardIndex)
   /**
    * Get countries list
    */
@@ -51,8 +51,8 @@ const Profile = ({
    * Get Account details
    */
   useEffect(async () => {
-    if (userDetails?.guid) {
-      const res = await getAccontDetails(userDetails?.guid)
+    if (userDetails?._id) {
+      const res = await getAccontDetails(userDetails?._id)
       if ((res.StatusCode >= 400 || res.hasError) && res?.StatusCode !== 401) {
         setLoader(false)
         NotificationManager.error('something went wrong', '', 10000)
@@ -71,6 +71,7 @@ const Profile = ({
         firstName: userAccountDetails?.response?.firstName,
         lastName: userAccountDetails?.response?.lastName
       }
+      console.log("userAccountDetails?.response?.guid",userAccountDetails)
       setUserGuid(userAccountDetails?.response?.guid)
       setBasicInfo(basicInfo)
       if (!shopifyAuth && !isShopifyApp()) {

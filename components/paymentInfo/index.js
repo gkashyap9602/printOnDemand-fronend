@@ -372,7 +372,7 @@ let PaymentInfo = ({
         NotificationManager.success('Payment info updated', '', 2000)
         setpopup(true)
       } else {
-        getAccontDetails(userDetails?.guid)
+        getAccontDetails(userDetails?._id)
         NotificationManager.success('Payment info updated', '', 2000)
         route.push('/profile')
         updateField('wizardIndex', 0)

@@ -56,6 +56,7 @@ let ShippingInfo = ({
    */
   useEffect(() => {
     if (Object.getOwnPropertyNames(info).length !== 0) {
+      console.log("info",info)
       const { country, stateName } = info
       if (country && country === 'US' && stateName) {
         setCurrentValue({ ...currentValue, country, stateName })
@@ -114,6 +115,7 @@ let ShippingInfo = ({
   /**
    * set state field
    */
+  console.log("country",country)
   useEffect(async () => {
     const countryIsSelectable = shippingInfoForms.filter(
       (formInfo) => formInfo.name === 'country' && formInfo.options?.length

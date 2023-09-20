@@ -3,7 +3,7 @@ import fetchHandler from '../../utils/fetchResponseHandler'
 
 export const signupCredentials = (data) => {
   const fetchOptions = {
-    url: 'api/User/Register',
+    url: 'api/v1/users/register',
     method: 'POST',
     actionType: AUTH.SEND_SIGNUP_CREDENTIALS,
     body: data,
@@ -15,7 +15,7 @@ export const signupCredentials = (data) => {
 
 export const userAuthentication = (data) => {
   const fetchOptions = {
-    url: 'api/Authentication/login',
+    url: 'api/v1/users/login',
     method: 'POST',
     actionType: AUTH.SEND_LOGIN_CREDENTIALS,
     body: data,
@@ -27,7 +27,7 @@ export const userAuthentication = (data) => {
 
 export const forgotPasswordHandler = (data) => {
   const fetchOptions = {
-    url: 'api/Authentication/GeneratePasswordResetToken',
+    url: 'api/v1/users/forgot',
     method: 'POST',
     actionType: AUTH.SEND_FORGOT_PASSWORD,
     body: JSON.stringify(data),
@@ -39,7 +39,7 @@ export const forgotPasswordHandler = (data) => {
 
 export const resetPasswordHandler = (data) => {
   const fetchOptions = {
-    url: 'api/Authentication/ResetPassword',
+    url: 'api/v1/users/reset_password',
     method: 'POST',
     actionType: AUTH.RESET_PASSWORD,
     body: JSON.stringify(data),
@@ -63,7 +63,7 @@ export const activateAccountHandler = (data) => {
 
 export const signoutHandler = () => {
   const fetchOptions = {
-    url: 'api/Authentication/Logout',
+    url: 'api/v1/users/logout',
     method: 'POST',
     actionType: AUTH.SIGNOUT_HANDLER,
     secure: true

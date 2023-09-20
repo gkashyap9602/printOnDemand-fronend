@@ -114,21 +114,25 @@ let BasicInfo = ({
           <form name='BasicInfoForm' onSubmit={handleSubmit(saveHandler)}>
             <div className={classes.formWrapper}>
               <Grid container spacing={2}>
-                {BASIC_INFO?.map((field, i) => (
-                  <Grid item {...field.size} key={i}>
-                    <Field
-                      {...field}
-                      label={field?.label}
-                      id={field?.name}
-                      placeholder={field?.placeholder}
-                      name={field?.name}
-                      type={field?.type || 'text'}
-                      component={TextInput}
-                      isDisabled={field?.name === 'email' && info.email ? true : false}
-                      helperText={errors?.[field?.name]}
-                    />
-                  </Grid>
-                ))}
+                {BASIC_INFO?.map((field, i) => {
+                  console.log("field", field)
+                  return (
+                    <Grid item {...field.size} key={i}>
+                      <Field
+                        {...field}
+                        label={field?.label}
+                        id={field?.name}
+                        placeholder={field?.placeholder}
+                        name={field?.name}
+                        type={field?.type || 'text'}
+                        component={TextInput}
+                        isDisabled={field?.name === 'email' && info.email ? true : false}
+                        helperText={errors?.[field?.name]}
+                      />
+                    </Grid>
+                  )
+                }
+                )}
               </Grid>
 
               <Button

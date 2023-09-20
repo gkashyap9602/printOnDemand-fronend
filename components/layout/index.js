@@ -106,7 +106,7 @@ const Layout = ({
 
   useEffect(async () => {
     if (userSession?.guid && checkIfEmpty(userAccountDetails?.response)) {
-      const res = await getAccontDetails(userSession?.guid)
+      const res = await getAccontDetails(userSession?._id)
       if (res?.StatusCode === 12002 || res.hasError) {
         setLoader(false)
         NotificationManager.error(res?.Response?.Message, '', 10000)
@@ -116,8 +116,8 @@ const Layout = ({
         NotificationManager.error('Something went wrong, please refresh the page', '', 10000)
       }
     }
-    if (userSession?.guid) {
-      const resultData = await getStatusApi(userSession?.guid)
+    if (userSession?._id) {
+      const resultData = await getStatusApi(userSession?._id)
       if (resultData?.response) {
         setLoader(false)
         statusTabList?.map((list) => {

@@ -3,9 +3,9 @@ import fetchHandler from '../../utils/fetchResponseHandler'
 import { ISSERVER } from 'constants/routePaths'
 import { isShopifyApp } from '../../utils/helpers'
 
-export const getAccontDetails = (guid) => {
+export const getAccontDetails = (_id) => {
   const fetchOptions = {
-    url: `api/User/${guid}`,
+    url: `api/v1/users/getUser/${_id}`,
     method: 'GET',
     actionType: USER.GET_ACCOUNT_DETAILS,
     secure: true
@@ -14,9 +14,9 @@ export const getAccontDetails = (guid) => {
   return fetchHandler(fetchOptions)
 }
 
-export const getStatusApi = (guid) => {
+export const getStatusApi = (_id) => {
   const fetchOptions = {
-    url: `api/User/GetUserStatus/${guid}`,
+    url: `api/v1/users/get_user_status/${_id}`,
     method: 'GET',
     actionType: USER.GET_STATUS,
     secure: true
@@ -27,7 +27,7 @@ export const getStatusApi = (guid) => {
 
 export const updateBasicInfo = (data) => {
   const fetchOptions = {
-    url: `api/Customer/UpdateBasicDetails`,
+    url: `api/v1/users/update_basic_details`,
     method: 'POST',
     actionType: USER.SEND_BASIC_INFO,
     body: JSON.stringify(data),
@@ -39,7 +39,7 @@ export const updateBasicInfo = (data) => {
 
 export const updatePasswordHandler = (data) => {
   const fetchOptions = {
-    url: 'api/Authentication/ChangePassword',
+    url: 'api/v1/users/change_password',
     method: 'POST',
     actionType: USER.UPDATE_PASSWORD,
     body: JSON.stringify(data),
@@ -51,7 +51,7 @@ export const updatePasswordHandler = (data) => {
 
 export const updateShippingInfo = (data) => {
   const fetchOptions = {
-    url: `api/Customer/UpdateShippingAddress`,
+    url: `api/v1/users/update_shipping_details`,
     method: 'POST',
     actionType: USER.SEND_SHIPPING_INFO,
     body: JSON.stringify(data),
@@ -63,7 +63,7 @@ export const updateShippingInfo = (data) => {
 
 export const updateBillingInfo = (data) => {
   const fetchOptions = {
-    url: `api/Customer/UpdateBillingAddress`,
+    url: `api/v1/users/update_billing_address`,
     method: 'POST',
     actionType: USER.SEND_BILLING_INFO,
     body: JSON.stringify(data),
@@ -75,7 +75,7 @@ export const updateBillingInfo = (data) => {
 
 export const updatePaymentInfo = (data) => {
   const fetchOptions = {
-    url: `api/Customer/UpdatePaymentDetails`,
+    url: `api/v1/users/update_payment_details`,
     method: 'POST',
     actionType: USER.SEND_BILLING_INFO,
     body: JSON.stringify(data),
@@ -87,7 +87,7 @@ export const updatePaymentInfo = (data) => {
 
 export const getCountryList = () => {
   const fetchOptions = {
-    url: `api/General/GetAllCountries`,
+    url: `api/v1/common/getAllCountries`,
     method: 'GET',
     actionType: USER.GET_COUNTRY_LIST,
     secure: true
@@ -98,7 +98,7 @@ export const getCountryList = () => {
 
 export const getStateList = (data) => {
   const fetchOptions = {
-    url: `api/General/GetAllStates?countryCode=${data}`,
+    url: `api/v1/common/getAllStates?countryCode=${data}`,
     method: 'GET',
     actionType: USER.GET_STATE_LIST,
     secure: true
@@ -110,7 +110,7 @@ export const getStateList = (data) => {
 export const updateField = (field, val) => {
   if (!isShopifyApp()) {
     const userSession = !ISSERVER && JSON.parse(localStorage.getItem('userSession'))
-    userSession && getAccontDetails(userSession?.guid)
+    userSession && getAccontDetails(userSession?._id)
   }
   return {
     type: USER.UPDATE_FIELD,
@@ -128,6 +128,7 @@ export const getUserSessionShopify = () => {
   }
   return fetchHandler(fetchOptions)
 }
+
 export const clearSessionShopify = () => {
   return {
     type: USER.CLEAR_SESSION_SHOPIFY
