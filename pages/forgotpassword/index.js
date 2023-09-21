@@ -12,6 +12,7 @@ import { checkIfEmpty, partialEmail, validateFields } from 'utils/helpers'
 import { forgotPasswordHandler } from 'redux/actions/authActions'
 import { connect } from 'react-redux'
 import Link from 'next/link'
+import fileUrl from 'constants/url'
 const useStyles = style
 
 /**
@@ -63,7 +64,7 @@ let Forgot = ({ handleSubmit, forgotPasswordHandler, mail }) => {
           <Grid container spacing={3} direction='row' className={classes.root}>
             <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
               <div className={classes.forgot_Row}>
-                <Image src={ForgotBanner} alt='Forgot' width={475} height={305} />
+                <Image src={`${fileUrl}forget-password.png`} alt='Forgot' width={475} height={305} />
               </div>
             </Grid>
             <Grid item xs={12} sm={12} md={6} lg={6} xl={6} style={{ zIndex: 1 }}>

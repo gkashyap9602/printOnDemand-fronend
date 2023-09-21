@@ -16,6 +16,7 @@ import { useRouter } from 'next/router'
 import { updateField, getUserSessionShopify } from 'redux/actions/userActions'
 import jwt_decode from 'jwt-decode'
 import Loader from 'components/loader'
+import fileUrl from 'constants/url'
 const useStyles = style
 /**
  * LOGIN PAGE
@@ -175,6 +176,8 @@ let Login = ({
       handleLogin(dataValue, true)
     }
   }
+
+  console.log("fileUrl", fileUrl)
   //HTML
   return (
     <div className={classes.bgAccount}>

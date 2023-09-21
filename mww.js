@@ -4,7 +4,8 @@ const path = require('path');
 const cors = require('cors');
 const next = require('next');
 
-const PORT = 3001;
+// const PORT = 3001; /* Web is running to show client */
+const PORT = 3002;
 const dev = process.env.ENV_MODE !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
@@ -23,6 +24,6 @@ app.prepare().then(() => {
 
   server.listen(PORT, (err) => {
     if (err) throw err;
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`MWW is running on port ${PORT}`);
   });
 });
